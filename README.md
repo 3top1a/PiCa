@@ -1,2 +1,5 @@
 # PiCa
-another chess engine
+yet another chess engine
+
+
+
