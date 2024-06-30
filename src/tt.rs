@@ -1,4 +1,4 @@
-use chess::CacheTable;
+use chess::{CacheTable, ChessMove};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Debug)]
 pub enum NodeType {
@@ -15,6 +15,7 @@ pub struct TranspositionEntry {
     pub depth: u8,
     pub node_type: NodeType,
     pub value: i32,
+    pub best_move: Option<ChessMove>,
 }
 
 impl Default for TranspositionEntry {
@@ -24,6 +25,7 @@ impl Default for TranspositionEntry {
             key: 0,
             node_type: NodeType::Default,
             value: 0,
+            best_move: None,
         }
     }
 }
@@ -73,6 +75,7 @@ mod test {
             key: 85,
             node_type: crate::tt::NodeType::Exact,
             value: 0,
+            ..Default::default()
         };
 
         assert!(a.is_valid(85));

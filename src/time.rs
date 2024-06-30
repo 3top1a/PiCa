@@ -12,6 +12,9 @@ pub struct TimeManager {
 impl TimeManager {
     // https://www.chessprogramming.org/Time_Management
     pub fn can_continue(&self, depth: u8, board: Board, start_of_search: Instant) -> bool {
+        // TODO Yeet this HACK
+        let estimatebranchingfactor = 8;
+
         // Check for max depth
         if depth > self.max_depth.unwrap_or(255u8) {
             return false;
@@ -21,7 +24,7 @@ impl TimeManager {
             | board.color_combined(chess::Color::Black))
         .popcnt() as u8;
         let time_ms = Instant::now();
-        let diff = time_ms.duration_since(start_of_search).as_millis() as u32;
+        let diff = time_ms.duration_since(start_of_search).as_millis() as u32 * estimatebranchingfactor;
 
         if let Some(max) = self.max_ms {
             if diff > max {

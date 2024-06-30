@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use chess::{Board, ChessMove,  MoveGen};
+use chess::{Board, ChessMove, MoveGen, Piece};
 
 use crate::{
     bump,
@@ -11,6 +11,41 @@ use crate::{
 };
 
 const OO: i32 = 10000;
+pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
+    [0, 0, 0, 0, 0, 0, 0],
+    [0, 15, 14, 13, 12, 11, 10],
+    [0, 25, 24, 23, 22, 21, 20],
+    [0, 35, 34, 33, 32, 31, 30],
+    [0, 45, 44, 43, 42, 41, 40],
+    [0, 55, 54, 53, 52, 51, 50],
+    [0, 0, 0, 0, 0, 0, 0],
+];
+
+// TODO Remove this function and reorded table
+fn piece_to_index(a: Option<Piece>) -> usize {
+    match a {
+        None => 0,
+        Some(a) => a.to_index() + 1,
+    }
+}
+
+fn score_move(mv: ChessMove, b: &Board) -> u8 {
+    let attacker = piece_to_index(b.piece_on(mv.get_source()));
+    let victim = piece_to_index(b.piece_on(mv.get_dest()));
+
+    let mvvlva = MVV_LVA[victim][attacker];
+
+    mvvlva
+}
+
+fn sort_moves(a: ChessMove, b: ChessMove, board: &Board) -> core::cmp::Ordering {
+    //return a.cmp(&b);
+
+    let a = score_move(a, board);
+    let b = score_move(b, board);
+
+    b.cmp(&a)
+}
 
 pub struct Engine {
     tt: TT,
@@ -40,7 +75,10 @@ impl Engine {
             }
 
             let movegen = MoveGen::new_legal(&board);
-            for mv in movegen {
+            let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
+            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board));
+
+            for mv in sorted_mv {
                 let nb = board.make_move_new(mv);
                 let score = -self.negamax(&nb, -beta, -alpha, depth, 1);
 
@@ -74,7 +112,7 @@ impl Engine {
                     (NODES_SEARCHED as f32).powf(1. / depth as f32),
                     TT_CHECK,
                     TT_HIT,
-                    (1000*NODES_SEARCHED as u128) / time
+                    (1000 * NODES_SEARCHED as u128) / time
                 );
             }
         }
@@ -134,12 +172,17 @@ impl Engine {
             depth += 1
         };
 
-        let mut movegen = MoveGen::new_legal(board);
+        let movegen = MoveGen::new_legal(board);
+        let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
+        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board));
+        if let Some(tt_move) = entry.best_move {
+            if let Some(index) = sorted_mv.iter().position(|&m| m == tt_move) {
+                sorted_mv.swap(0, index);
+            }
+        }
 
-        // let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        // sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board));
-
-        for mv in &mut movegen {
+        let mut best_move = None;
+        for mv in sorted_mv {
             // let capture = board.piece_on(mv.get_dest()).is_some();
 
             let nb = board.make_move_new(mv);
@@ -151,11 +194,13 @@ impl Engine {
                     value: beta,
                     depth,
                     node_type: NodeType::LowerBound,
+                    best_move: Some(mv),
                 });
                 return beta;
             }
             if score > alpha {
                 alpha = score;
+                best_move = Some(mv);
             }
         }
 
@@ -171,6 +216,7 @@ impl Engine {
                     NodeType::UpperBound
                 }
             },
+            best_move,
         });
 
         alpha
