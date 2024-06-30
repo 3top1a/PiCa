@@ -10,6 +10,8 @@ pub enum NodeType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Debug)]
+/// Transposition table entry
+/// TODO: Compressed TT entry in 128 bits - 64 for key, 64 for data. Might have to cut the move and reimplement TT move ordering
 pub struct TranspositionEntry {
     pub key: u64,
     pub depth: u8,
@@ -33,7 +35,7 @@ impl Default for TranspositionEntry {
 impl TranspositionEntry {
     pub fn is_valid(&self, key: u64) -> bool {
         // return self.key == key && *self != Self::default()
-        return self.key == key && self.node_type != NodeType::Default;
+        self.key == key && self.node_type != NodeType::Default
     }
 }
 

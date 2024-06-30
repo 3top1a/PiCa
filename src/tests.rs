@@ -1,36 +1,37 @@
-use super::*;
+mod tests {
+    use crate::*;
 
-macro_rules! nextmoveassert {
-    ($fen:expr, $move:expr) => {
-        use chess::ChessMove;
-        let board = Board::from_str($fen).unwrap();
-        let mv = Engine::new().start(board, TimeManager::test_preset());
-        let bestmv = ChessMove::from_san(&board, $move).unwrap();
-        assert_eq!(
-            mv.to_string(),
-            bestmv.to_string(),
-            "{}",
-            format!("FEN: {}", board)
-        );
-    };
-}
+    macro_rules! nextmoveassert {
+        ($fen:expr, $move:expr) => {
+            use chess::ChessMove;
+            let board = Board::from_str($fen).unwrap();
+            let mv = Engine::new(256).start(board, TimeManager::test_preset());
+            let bestmv = ChessMove::from_san(&board, $move).unwrap();
+            assert_eq!(
+                mv.to_string(),
+                bestmv.to_string(),
+                "{}",
+                format!("FEN: {}", board)
+            );
+        };
+    }
 
-/// Parses an EPD string and returns the FEN and the best move as a tuple
-fn parse_epd(epd: &str) -> (&str, &str) {
-    let parts: Vec<&str> = epd.split(" bm ").collect();
-    let fen = parts[0];
-    let best_move = parts[1].split(';').next().unwrap().trim();
-    (fen, best_move)
-}
+    /// Parses an EPD string and returns the FEN and the best move as a tuple
+    fn parse_epd(epd: &str) -> (&str, &str) {
+        let parts: Vec<&str> = epd.split(" bm ").collect();
+        let fen = parts[0];
+        let best_move = parts[1].split(';').next().unwrap().trim();
+        (fen, best_move)
+    }
 
-// Test position tests
-// https://groups.google.com/g/rec.games.chess.misc/c/OeK0k5KDaf4
+    // Test position tests
+    // https://groups.google.com/g/rec.games.chess.misc/c/OeK0k5KDaf4
 
-/// Bratko Kopec Test
-/// https://www.chessprogramming.org/Bratko-Kopec_Test
-#[test]
-fn bratko_kopec() {
-    let positions = "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - bm Qd1+;
+    /// Bratko Kopec Test
+    /// https://www.chessprogramming.org/Bratko-Kopec_Test
+    #[test]
+    fn bratko_kopec() {
+        let positions = "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - bm Qd1+;
 3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - bm d5;
 2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - bm f5;
 rnbqkb1r/p3pppp/1p6/2ppP3/3N4/2P5/PPP1QPPP/R1B1KB1R w KQkq - bm e6;
@@ -54,29 +55,30 @@ r4k2/pb2bp1r/1p1qp2p/3pNp2/3P1P2/2N3P1/PPP1Q2P/2KRR3 w - - bm g4;
 2r2rk1/1bqnbpp1/1p1ppn1p/pP6/N1P1P3/P2B1N1P/1B2QPP1/R2R2K1 b - - bm Bxe4;
 r1bqk2r/pp2bppp/2p5/3pP3/P2Q1P2/2N1B3/1PP3PP/R4RK1 b kq - bm f6;
 r2qnrnk/p2b2b1/1p1p2pp/2pPpp2/1PP1P3/PRNBB3/3QNPPP/5RK1 w - - bm f4;"
-        .lines();
+            .lines();
 
-    for pos in positions {
-        let (fen, best_move) = parse_epd(pos);
-        nextmoveassert!(fen, best_move);
+        for pos in positions {
+            let (fen, best_move) = parse_epd(pos);
+            nextmoveassert!(fen, best_move);
+        }
     }
-}
 
-#[test]
-/// https://www.stmintz.com/ccc/index.php?id=476109
-fn endgames() {
-    let engine = Engine::new();
+    #[test]
+    /// https://www.stmintz.com/ccc/index.php?id=476109
+    fn endgames() {
+        let engine = Engine::new(256);
 
-    // https://www.stmintz.com/ccc/index.php?id=391553
-    let positions = "3k4/8/4K3/2R5/8/8/8/8 w - - bm Rc1
+        // https://www.stmintz.com/ccc/index.php?id=391553
+        let positions = "3k4/8/4K3/2R5/8/8/8/8 w - - bm Rc1
 4k3/8/4K3/8/8/8/2R5/8 w - - 2 2 bm Rc8
 1k6/7R/2K5/8/8/8/8/8 w - - bm Rh8
 8/3k4/8/8/3PK3/8/8/8 w - - bm Kd5
 2k5/8/1K1P4/8/8/8/8/8 w - - bm Kc6"
-        .lines();
+            .lines();
 
-    for pos in positions {
-        let (fen, best_move) = parse_epd(pos);
-        nextmoveassert!(fen, best_move);
+        for pos in positions {
+            let (fen, best_move) = parse_epd(pos);
+            nextmoveassert!(fen, best_move);
+        }
     }
 }

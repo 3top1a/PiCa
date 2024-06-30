@@ -5,6 +5,7 @@ mod tables;
 mod tests;
 mod time;
 mod tt;
+mod utils;
 
 use std::io;
 use std::io::BufRead;
@@ -17,16 +18,16 @@ use vampirc_uci::parse_one;
 use vampirc_uci::UciMessage;
 
 fn main() {
-    println!("PiCa v{}", env!("CARGO_PKG_VERSION"));
+    let mut tt_size_mb = 256;
 
     let mut board = Board::default();
-    let mut eng = Engine::new();
+    let mut eng = Engine::new(tt_size_mb);
 
     for line in io::stdin().lock().lines() {
         let msg: UciMessage = parse_one(&line.expect("Parse UCI message"));
         match msg {
             UciMessage::Uci => {
-                println!("id name PiCa");
+                println!("id name PiCa v{}", env!("CARGO_PKG_VERSION"));
                 println!("id author Filip Rusz <filip@rusz.space>");
 
                 // List options
@@ -39,11 +40,12 @@ fn main() {
             }
             UciMessage::UciNewGame => {
                 board = Board::default();
-                eng = Engine::new();
+                eng = Engine::new(tt_size_mb);
             }
             UciMessage::SetOption { name, value } => {
                 if let Some(value) = value {
                     match name.as_str() {
+                        "Hash" => tt_size_mb = value.parse().unwrap(),
                         _ => println!("> Invalid name!"),
                     }
                 } else {
@@ -51,7 +53,7 @@ fn main() {
                 }
 
                 // Reset engine
-                eng = Engine::new();
+                eng = Engine::new(tt_size_mb);
             }
             UciMessage::Position {
                 startpos,
@@ -87,9 +89,7 @@ fn main() {
                         vampirc_uci::UciTimeControl::TimeLeft {
                             white_time,
                             black_time,
-                            white_increment,
-                            black_increment,
-                            moves_to_go,
+                            ..
                         } => TimeManager {
                             max_depth: None,
                             max_nodes: None,
@@ -113,7 +113,7 @@ fn main() {
                                 }
                             },
                         },
-                        vampirc_uci::UciTimeControl::Infinite | _ => TimeManager {
+                        _ => TimeManager {
                             max_depth: None,
                             max_nodes: None,
                             max_ms: None,
@@ -129,14 +129,7 @@ fn main() {
                     }
                 };
 
-                let t = TimeManager {
-                    max_depth: None,
-                    max_nodes: None,
-                    max_ms: Some(5000),
-                    max_allowed_time: None,
-                };
-
-                let mv = eng.start(board, t);
+                let mv = eng.start(board, tc);
                 println!("bestmove {mv}");
             }
             UciMessage::Quit => {

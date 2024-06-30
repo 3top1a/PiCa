@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use chess::{Board, ChessMove, MoveGen, Piece};
+use chess::{Board, ChessMove, MoveGen};
 
 use crate::{
     bump,
@@ -8,74 +8,21 @@ use crate::{
     stats::{self, CHECK_EXTENSION, NODES_SEARCHED, TT_CHECK, TT_HIT},
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
+    utils::{log_search_statistics, sort_moves, SearchInfo},
 };
 
 pub const OO: i32 = 10000;
+/// Maximum number of moves
 pub const MAX_PLY: u8 = 200;
-pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
-    [0, 0, 0, 0, 0, 0, 0],
-    [0, 15, 14, 13, 12, 11, 10],
-    [0, 25, 24, 23, 22, 21, 20],
-    [0, 35, 34, 33, 32, 31, 30],
-    [0, 45, 44, 43, 42, 41, 40],
-    [0, 55, 54, 53, 52, 51, 50],
-    [0, 0, 0, 0, 0, 0, 0],
-];
-
-// TODO Remove this function and reorded table
-fn piece_to_index(a: Option<Piece>) -> usize {
-    match a {
-        None => 0,
-        Some(a) => a.to_index() + 1,
-    }
-}
-
-fn score_move(mv: ChessMove, b: &Board) -> u8 {
-    let attacker = piece_to_index(b.piece_on(mv.get_source()));
-    let victim = piece_to_index(b.piece_on(mv.get_dest()));
-
-    let mvvlva = MVV_LVA[victim][attacker];
-
-    mvvlva
-}
-
-fn sort_moves(a: ChessMove, b: ChessMove, board: &Board) -> core::cmp::Ordering {
-    let a = score_move(a, board);
-    let b = score_move(b, board);
-
-    b.cmp(&a)
-}
-
-#[derive(Debug)]
-pub struct SearchInfo {
-    pub pv: [Option<ChessMove>; MAX_PLY as usize],
-}
-
-impl SearchInfo {
-    pub fn new() -> Self {
-        Self {
-            pv: [None; MAX_PLY as usize],
-        }
-    }
-
-    pub fn print(&self) -> String {
-        self.pv
-            .iter()
-            .filter_map(|x| *x)
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .join(" ")
-    }
-}
 
 pub struct Engine {
     tt: TT,
 }
 
 impl Engine {
-    pub fn new() -> Self {
+    pub fn new(tt_size_mb: usize) -> Self {
         Self {
-            tt: TT::new_with_size_mb(256),
+            tt: TT::new_with_size_mb(tt_size_mb),
         }
     }
 
@@ -92,10 +39,17 @@ impl Engine {
 
         let mut sinfo = SearchInfo::new();
 
-        for depth in 3..127 {
-            if !time.can_continue(depth, board, start_of_search_instant) {
+        for depth in 3..MAX_PLY {
+            if !time.can_continue(
+                depth,
+                board,
+                unsafe { NODES_SEARCHED },
+                start_of_search_instant,
+            ) {
                 break;
             }
+
+            stats::reset();
 
             let movegen = MoveGen::new_legal(&board);
             let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
@@ -120,29 +74,10 @@ impl Engine {
                 }
             }
 
-            unsafe {
-                // Format: info score cp 20  depth 3 nodes 423 time 15 pv f1c4 g8f6 b1c3
-                let time = Instant::now()
-                    .duration_since(start_of_search_instant)
-                    .as_millis();
-                println!(
-                    "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} time {} pv {} {}",
-                    time,
-                    best_mv.unwrap(),
-                    sinfo.print()
-                );
-                println!(
-                    "stats checkexts {} EBR {} TT Check {} hit {} nps {:.0}",
-                    CHECK_EXTENSION,
-                    (NODES_SEARCHED as f32).powf(1. / depth as f32),
-                    TT_CHECK,
-                    TT_HIT,
-                    (1000 * NODES_SEARCHED as u128) / (time + 1)
-                );
-            }
+            log_search_statistics(depth, best_mv, best_score, &start_of_search_instant, &sinfo);
         }
 
-        best_mv.unwrap()
+        best_mv.expect("unable to find best move")
     }
 
     /// Starts a recursive negamax loop
@@ -161,12 +96,8 @@ impl Engine {
 
         match board.status() {
             chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => {
-                return ply as i32 - OO;
-            }
-            chess::BoardStatus::Stalemate => {
-                return 0;
-            }
+            chess::BoardStatus::Checkmate => return ply as i32 - OO,
+            chess::BoardStatus::Stalemate => return 0,
         }
 
         // Horizon
@@ -200,7 +131,8 @@ impl Engine {
 
         // Check extension
         let in_check = board.checkers().0 > 0;
-        if in_check {
+        // Also avoid flooding the stack
+        if in_check && ply < 20 {
             bump!(CHECK_EXTENSION);
             depth += 1
         };
@@ -219,8 +151,8 @@ impl Engine {
             // let capture = board.piece_on(mv.get_dest()).is_some();
             sinfo.pv[ply as usize] = Some(mv);
 
-            let nb = board.make_move_new(mv);
-            let score = -self.negamax(&nb, -beta, -alpha, depth - 1, ply + 1, sinfo);
+            let new_board = board.make_move_new(mv);
+            let score = -self.negamax(&new_board, -beta, -alpha, depth - 1, ply + 1, sinfo);
 
             if score >= beta {
                 self.tt.set(TranspositionEntry {

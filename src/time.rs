@@ -13,7 +13,13 @@ pub struct TimeManager {
 
 impl TimeManager {
     // https://www.chessprogramming.org/Time_Management
-    pub fn can_continue(&self, depth: u8, board: Board, start_of_search: Instant) -> bool {
+    pub fn can_continue(
+        &self,
+        depth: u8,
+        board: Board,
+        nodes: u64,
+        start_of_search: Instant,
+    ) -> bool {
         // TODO Yeet this HACK
         let estimatebranchingfactor = 8;
 
@@ -49,6 +55,12 @@ impl TimeManager {
         let allowed_time = self.max_allowed_time.unwrap_or(300000) / divider;
         if diff > allowed_time {
             return false;
+        }
+
+        if let Some(mnodes) = self.max_nodes {
+            if nodes > mnodes {
+                return false;
+            }
         }
 
         true
