@@ -4,7 +4,7 @@ macro_rules! nextmoveassert {
     ($fen:expr, $move:expr) => {
         use chess::ChessMove;
         let board = Board::from_str($fen).unwrap();
-        let mv = Engine::new().start(board);
+        let mv = Engine::new().start(board, TimeManager::test_preset());
         let bestmv = ChessMove::from_san(&board, $move).unwrap();
         assert_eq!(
             mv.to_string(),

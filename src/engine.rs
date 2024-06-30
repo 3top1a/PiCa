@@ -1,9 +1,12 @@
-use chess::{BitBoard, Board, CacheTable, ChessMove, File, MoveGen, Piece, Rank};
+use std::time::Instant;
+
+use chess::{Board, ChessMove,  MoveGen};
 
 use crate::{
     bump,
     eval::eval,
     stats::{self, CHECK_EXTENSION, NODES_SEARCHED, TT_CHECK, TT_HIT},
+    time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
 };
 
@@ -21,57 +24,59 @@ impl Engine {
     }
 
     /// Start a new search
-    pub fn start(&mut self, board: Board) -> ChessMove {
+    pub fn start(&mut self, board: Board, time: TimeManager) -> ChessMove {
         stats::reset();
-
-        let depth = 8;
+        let start_of_search_instant = Instant::now();
 
         let mut alpha = -OO;
         let beta = OO;
-        let movegen = MoveGen::new_legal(&board);
 
         let mut best_mv = None;
         let mut best_score = -OO * 2;
 
-        for mv in movegen {
-            let nb = board.make_move_new(mv);
-            let score = -self.negamax(&nb, -beta, -alpha, depth, 1);
-
-            if score > best_score {
-                best_score = score;
-                best_mv = Some(mv);
-            }
-
-            if score > alpha {
-                alpha = score;
-            }
-
-            if alpha >= beta {
+        for depth in 3..127 {
+            if !time.can_continue(depth, board, start_of_search_instant) {
                 break;
             }
-        }
 
-        // println!(
-        //     "info score cp {best_score} depth {} nodes {} leafs {} time {} pv {}",
-        //     depth + 1,
-        //     self.s.searched_nodes,
-        //     self.s.qsearched_leafs,
-        //     elapsed_millis(start_time),
-        //     best_mv.unwrap(),
-        // );
+            let movegen = MoveGen::new_legal(&board);
+            for mv in movegen {
+                let nb = board.make_move_new(mv);
+                let score = -self.negamax(&nb, -beta, -alpha, depth, 1);
 
-        unsafe {
-            println!(
-                "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} pv {}",
-                best_mv.unwrap()
-            );
-            println!(
-                "stats checkexts {} EBR {} TT Check {} hit {}",
-                CHECK_EXTENSION,
-                (NODES_SEARCHED as f32).powf(1. / depth as f32),
-                TT_CHECK,
-                TT_HIT
-            );
+                if score > best_score {
+                    best_score = score;
+                    best_mv = Some(mv);
+                }
+
+                if score > alpha {
+                    alpha = score;
+                }
+
+                if alpha >= beta {
+                    break;
+                }
+            }
+
+            unsafe {
+                // Format: info score cp 20  depth 3 nodes 423 time 15 pv f1c4 g8f6 b1c3
+                let time = Instant::now()
+                    .duration_since(start_of_search_instant)
+                    .as_millis();
+                println!(
+                    "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} time {} pv {}",
+                    time,
+                    best_mv.unwrap()
+                );
+                println!(
+                    "stats checkexts {} EBR {} TT Check {} hit {} nps {:.0}",
+                    CHECK_EXTENSION,
+                    (NODES_SEARCHED as f32).powf(1. / depth as f32),
+                    TT_CHECK,
+                    TT_HIT,
+                    (1000*NODES_SEARCHED as u128) / time
+                );
+            }
         }
 
         best_mv.unwrap()
@@ -95,7 +100,7 @@ impl Engine {
 
         // Horizon
         // Also avoid stack overflow
-        if depth == 0 || ply > 100 {
+        if depth == 0 || ply > 128 {
             return eval(board);
         }
 

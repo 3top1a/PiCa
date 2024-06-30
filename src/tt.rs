@@ -1,7 +1,5 @@
 use chess::CacheTable;
 
-const TTSIZE: usize = 1 << 24;
-
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Debug)]
 pub enum NodeType {
     Exact,

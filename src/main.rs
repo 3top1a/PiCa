@@ -3,6 +3,7 @@ mod eval;
 mod stats;
 mod tables;
 mod tests;
+mod time;
 mod tt;
 
 use std::io;
@@ -11,6 +12,7 @@ use std::str::FromStr;
 
 use chess::Board;
 use engine::Engine;
+use time::TimeManager;
 use vampirc_uci::parse_one;
 use vampirc_uci::UciMessage;
 
@@ -24,11 +26,11 @@ fn main() {
         let msg: UciMessage = parse_one(&line.expect("Parse UCI message"));
         match msg {
             UciMessage::Uci => {
-                println!("id name BT7274");
+                println!("id name PiCa");
                 println!("id author Filip Rusz <filip@rusz.space>");
 
                 // List options
-                println!("option name Hash type spin default 256 min 1 max 2048");
+                println!("option name Hash type spin default 256 min 1 max 8192");
 
                 println!("uciok");
             }
@@ -72,7 +74,15 @@ fn main() {
                 time_control: _,
                 search_control: _,
             } => {
-                let mv = eng.start(board);
+                let mv = eng.start(
+                    board,
+                    TimeManager {
+                        max_depth: None,
+                        max_nodes: None,
+                        max_ms: Some(5000),
+                        max_allowed_time: None,
+                    },
+                );
                 println!("bestmove {mv}");
             }
             UciMessage::Quit => {
