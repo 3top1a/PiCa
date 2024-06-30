@@ -2,6 +2,8 @@ use std::time::Instant;
 
 use chess::Board;
 
+use crate::engine::MAX_PLY;
+
 pub struct TimeManager {
     pub max_depth: Option<u8>,
     pub max_nodes: Option<u64>,
@@ -16,7 +18,7 @@ impl TimeManager {
         let estimatebranchingfactor = 8;
 
         // Check for max depth
-        if depth > self.max_depth.unwrap_or(255u8) {
+        if depth > self.max_depth.unwrap_or(MAX_PLY) {
             return false;
         }
 
@@ -24,7 +26,8 @@ impl TimeManager {
             | board.color_combined(chess::Color::Black))
         .popcnt() as u8;
         let time_ms = Instant::now();
-        let diff = time_ms.duration_since(start_of_search).as_millis() as u32 * estimatebranchingfactor;
+        let diff =
+            time_ms.duration_since(start_of_search).as_millis() as u32 * estimatebranchingfactor;
 
         if let Some(max) = self.max_ms {
             if diff > max {

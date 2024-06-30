@@ -71,18 +71,72 @@ fn main() {
                 }
             }
             UciMessage::Go {
-                time_control: _,
+                time_control: tc,
                 search_control: _,
             } => {
-                let mv = eng.start(
-                    board,
+                let color = board.side_to_move();
+
+                let tc = if let Some(tc) = tc {
+                    match tc {
+                        vampirc_uci::UciTimeControl::MoveTime(ms) => TimeManager {
+                            max_depth: None,
+                            max_nodes: None,
+                            max_ms: Some(ms.num_milliseconds() as u32),
+                            max_allowed_time: Some(ms.num_milliseconds() as u32),
+                        },
+                        vampirc_uci::UciTimeControl::TimeLeft {
+                            white_time,
+                            black_time,
+                            white_increment,
+                            black_increment,
+                            moves_to_go,
+                        } => TimeManager {
+                            max_depth: None,
+                            max_nodes: None,
+                            max_ms: None,
+                            max_allowed_time: {
+                                let w = if let Some(white_time) = white_time {
+                                    white_time.num_milliseconds()
+                                } else {
+                                    60000
+                                };
+
+                                let b = if let Some(black_time) = black_time {
+                                    black_time.num_milliseconds()
+                                } else {
+                                    60000
+                                };
+
+                                match color {
+                                    chess::Color::Black => Some(b as u32),
+                                    chess::Color::White => Some(w as u32),
+                                }
+                            },
+                        },
+                        vampirc_uci::UciTimeControl::Infinite | _ => TimeManager {
+                            max_depth: None,
+                            max_nodes: None,
+                            max_ms: None,
+                            max_allowed_time: None,
+                        },
+                    }
+                } else {
                     TimeManager {
                         max_depth: None,
                         max_nodes: None,
                         max_ms: Some(5000),
                         max_allowed_time: None,
-                    },
-                );
+                    }
+                };
+
+                let t = TimeManager {
+                    max_depth: None,
+                    max_nodes: None,
+                    max_ms: Some(5000),
+                    max_allowed_time: None,
+                };
+
+                let mv = eng.start(board, t);
                 println!("bestmove {mv}");
             }
             UciMessage::Quit => {

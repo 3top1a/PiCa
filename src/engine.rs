@@ -10,7 +10,8 @@ use crate::{
     tt::{NodeType, TranspositionEntry, TT},
 };
 
-const OO: i32 = 10000;
+pub const OO: i32 = 10000;
+pub const MAX_PLY: u8 = 200;
 pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
     [0, 0, 0, 0, 0, 0, 0],
     [0, 15, 14, 13, 12, 11, 10],
@@ -39,12 +40,32 @@ fn score_move(mv: ChessMove, b: &Board) -> u8 {
 }
 
 fn sort_moves(a: ChessMove, b: ChessMove, board: &Board) -> core::cmp::Ordering {
-    //return a.cmp(&b);
-
     let a = score_move(a, board);
     let b = score_move(b, board);
 
     b.cmp(&a)
+}
+
+#[derive(Debug)]
+pub struct SearchInfo {
+    pub pv: [Option<ChessMove>; MAX_PLY as usize],
+}
+
+impl SearchInfo {
+    pub fn new() -> Self {
+        Self {
+            pv: [None; MAX_PLY as usize],
+        }
+    }
+
+    pub fn print(&self) -> String {
+        self.pv
+            .iter()
+            .filter_map(|x| *x)
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(" ")
+    }
 }
 
 pub struct Engine {
@@ -69,6 +90,8 @@ impl Engine {
         let mut best_mv = None;
         let mut best_score = -OO * 2;
 
+        let mut sinfo = SearchInfo::new();
+
         for depth in 3..127 {
             if !time.can_continue(depth, board, start_of_search_instant) {
                 break;
@@ -80,7 +103,8 @@ impl Engine {
 
             for mv in sorted_mv {
                 let nb = board.make_move_new(mv);
-                let score = -self.negamax(&nb, -beta, -alpha, depth, 1);
+                sinfo.pv[0] = Some(mv);
+                let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo);
 
                 if score > best_score {
                     best_score = score;
@@ -102,9 +126,10 @@ impl Engine {
                     .duration_since(start_of_search_instant)
                     .as_millis();
                 println!(
-                    "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} time {} pv {}",
+                    "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} time {} pv {} {}",
                     time,
-                    best_mv.unwrap()
+                    best_mv.unwrap(),
+                    sinfo.print()
                 );
                 println!(
                     "stats checkexts {} EBR {} TT Check {} hit {} nps {:.0}",
@@ -112,7 +137,7 @@ impl Engine {
                     (NODES_SEARCHED as f32).powf(1. / depth as f32),
                     TT_CHECK,
                     TT_HIT,
-                    (1000 * NODES_SEARCHED as u128) / time
+                    (1000 * NODES_SEARCHED as u128) / (time + 1)
                 );
             }
         }
@@ -123,7 +148,15 @@ impl Engine {
     /// Starts a recursive negamax loop
     /// https://www.chessprogramming.org/Negamax
     /// https://www.chessprogramming.org/Alpha-Beta
-    fn negamax(&mut self, board: &Board, mut alpha: i32, beta: i32, mut depth: u8, ply: u8) -> i32 {
+    fn negamax(
+        &mut self,
+        board: &Board,
+        mut alpha: i32,
+        beta: i32,
+        mut depth: u8,
+        ply: u8,
+        sinfo: &mut SearchInfo,
+    ) -> i32 {
         bump!(NODES_SEARCHED);
 
         match board.status() {
@@ -138,7 +171,7 @@ impl Engine {
 
         // Horizon
         // Also avoid stack overflow
-        if depth == 0 || ply > 128 {
+        if depth == 0 || ply > MAX_PLY {
             return eval(board);
         }
 
@@ -184,9 +217,10 @@ impl Engine {
         let mut best_move = None;
         for mv in sorted_mv {
             // let capture = board.piece_on(mv.get_dest()).is_some();
+            sinfo.pv[ply as usize] = Some(mv);
 
             let nb = board.make_move_new(mv);
-            let score = -self.negamax(&nb, -beta, -alpha, depth - 1, ply + 1);
+            let score = -self.negamax(&nb, -beta, -alpha, depth - 1, ply + 1, sinfo);
 
             if score >= beta {
                 self.tt.set(TranspositionEntry {

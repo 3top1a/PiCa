@@ -38,6 +38,7 @@ impl TranspositionEntry {
 }
 
 pub struct TT {
+    // TODO maybe get rid of CacheTable in favor of custom impl
     t: CacheTable<TranspositionEntry>,
 }
 
