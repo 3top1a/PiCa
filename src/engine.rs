@@ -3,22 +3,28 @@ use chess::{BitBoard, Board, CacheTable, ChessMove, File, MoveGen, Piece, Rank};
 use crate::{
     bump,
     eval::eval,
-    stats::{self, dump, CHECK_EXTENSION, NODES_SEARCHED},
+    stats::{self, CHECK_EXTENSION, NODES_SEARCHED, TT_CHECK, TT_HIT},
+    tt::{NodeType, TranspositionEntry, TT},
 };
 
 const OO: i32 = 10000;
 
-#[derive(Clone, Debug)]
-pub struct Engine {}
+pub struct Engine {
+    tt: TT,
+}
 
 impl Engine {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            tt: TT::new_with_size_mb(256),
+        }
     }
 
     /// Start a new search
     pub fn start(&mut self, board: Board) -> ChessMove {
         stats::reset();
+
+        let depth = 8;
 
         let mut alpha = -OO;
         let beta = OO;
@@ -29,7 +35,7 @@ impl Engine {
 
         for mv in movegen {
             let nb = board.make_move_new(mv);
-            let score = -self.negamax(&nb, -beta, -alpha, 3, 1);
+            let score = -self.negamax(&nb, -beta, -alpha, depth, 1);
 
             if score > best_score {
                 best_score = score;
@@ -54,7 +60,19 @@ impl Engine {
         //     best_mv.unwrap(),
         // );
 
-        dump(3);
+        unsafe {
+            println!(
+                "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} pv {}",
+                best_mv.unwrap()
+            );
+            println!(
+                "stats checkexts {} EBR {} TT Check {} hit {}",
+                CHECK_EXTENSION,
+                (NODES_SEARCHED as f32).powf(1. / depth as f32),
+                TT_CHECK,
+                TT_HIT
+            );
+        }
 
         best_mv.unwrap()
     }
@@ -81,6 +99,29 @@ impl Engine {
             return eval(board);
         }
 
+        // Check TT
+        let key = board.get_hash();
+        let original_alpha = alpha;
+        let entry = self.tt.get(key);
+        bump!(TT_CHECK);
+        if entry.is_valid(key) && entry.depth >= depth {
+            bump!(TT_HIT);
+            match entry.node_type {
+                NodeType::Exact => return entry.value,
+                NodeType::LowerBound => {
+                    if entry.value >= beta {
+                        return entry.value;
+                    }
+                }
+                NodeType::UpperBound => {
+                    if entry.value <= alpha {
+                        return entry.value;
+                    }
+                }
+                NodeType::Default => unreachable!(),
+            }
+        }
+
         // Check extension
         let in_check = board.checkers().0 > 0;
         if in_check {
@@ -100,12 +141,32 @@ impl Engine {
             let score = -self.negamax(&nb, -beta, -alpha, depth - 1, ply + 1);
 
             if score >= beta {
+                self.tt.set(TranspositionEntry {
+                    key,
+                    value: beta,
+                    depth,
+                    node_type: NodeType::LowerBound,
+                });
                 return beta;
             }
             if score > alpha {
                 alpha = score;
             }
         }
+
+        // Add to TT
+        self.tt.set(TranspositionEntry {
+            key,
+            value: alpha,
+            depth,
+            node_type: {
+                if alpha > original_alpha {
+                    NodeType::Exact
+                } else {
+                    NodeType::UpperBound
+                }
+            },
+        });
 
         alpha
     }

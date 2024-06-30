@@ -1,12 +1,17 @@
 use super::*;
 
 macro_rules! nextmoveassert {
-    ($eng:ident, $fen:expr, $move:expr) => {
+    ($fen:expr, $move:expr) => {
         use chess::ChessMove;
         let board = Board::from_str($fen).unwrap();
-        let mv = $eng.clone().start(board);
+        let mv = Engine::new().start(board);
         let bestmv = ChessMove::from_san(&board, $move).unwrap();
-        assert_eq!(mv.to_string(), bestmv.to_string(), "{}", format!("FEN: {}", board));
+        assert_eq!(
+            mv.to_string(),
+            bestmv.to_string(),
+            "{}",
+            format!("FEN: {}", board)
+        );
     };
 }
 
@@ -25,8 +30,6 @@ fn parse_epd(epd: &str) -> (&str, &str) {
 /// https://www.chessprogramming.org/Bratko-Kopec_Test
 #[test]
 fn bratko_kopec() {
-    let engine = Engine::new();
-
     let positions = "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - bm Qd1+;
 3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - bm d5;
 2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - bm f5;
@@ -55,7 +58,7 @@ r2qnrnk/p2b2b1/1p1p2pp/2pPpp2/1PP1P3/PRNBB3/3QNPPP/5RK1 w - - bm f4;"
 
     for pos in positions {
         let (fen, best_move) = parse_epd(pos);
-        nextmoveassert!(engine, fen, best_move);
+        nextmoveassert!(fen, best_move);
     }
 }
 
@@ -74,6 +77,6 @@ fn endgames() {
 
     for pos in positions {
         let (fen, best_move) = parse_epd(pos);
-        nextmoveassert!(engine, fen, best_move);
+        nextmoveassert!(fen, best_move);
     }
 }

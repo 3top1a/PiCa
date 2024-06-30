@@ -3,6 +3,7 @@ mod eval;
 mod stats;
 mod tables;
 mod tests;
+mod tt;
 
 use std::io;
 use std::io::BufRead;
