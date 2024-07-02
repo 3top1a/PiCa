@@ -14,6 +14,7 @@ use std::str::FromStr;
 use chess::Board;
 use engine::Engine;
 use time::TimeManager;
+use utils::History;
 use vampirc_uci::parse_one;
 use vampirc_uci::UciMessage;
 
@@ -22,6 +23,7 @@ fn main() {
 
     let mut board = Board::default();
     let mut eng = Engine::new(tt_size_mb);
+    let mut hist = History::new();
 
     for line in io::stdin().lock().lines() {
         let msg: UciMessage = parse_one(&line.expect("Parse UCI message"));
@@ -41,6 +43,7 @@ fn main() {
             UciMessage::UciNewGame => {
                 board = Board::default();
                 eng = Engine::new(tt_size_mb);
+                hist = History::new();
             }
             UciMessage::SetOption { name, value } => {
                 if let Some(value) = value {
@@ -54,6 +57,7 @@ fn main() {
 
                 // Reset engine
                 eng = Engine::new(tt_size_mb);
+                hist = History::new();
             }
             UciMessage::Position {
                 startpos,
@@ -129,8 +133,9 @@ fn main() {
                     }
                 };
 
-                let mv = eng.start(board, tc);
+                let mv = eng.start(board, tc, hist);
                 println!("bestmove {mv}");
+                hist = hist.push_hist_new(board.make_move_new(mv).get_hash());
             }
             UciMessage::Quit => {
                 return;

@@ -8,7 +8,7 @@ use crate::{
     stats::{self, CHECK_EXTENSION, NODES_SEARCHED, TT_CHECK, TT_HIT},
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
-    utils::{log_search_statistics, sort_moves, SearchInfo},
+    utils::{log_search_statistics, sort_moves, History, SearchInfo},
 };
 
 pub const OO: i32 = 10000;
@@ -27,7 +27,7 @@ impl Engine {
     }
 
     /// Start a new search
-    pub fn start(&mut self, board: Board, time: TimeManager) -> ChessMove {
+    pub fn start(&mut self, board: Board, time: TimeManager, history: History) -> ChessMove {
         stats::reset();
         let start_of_search_instant = Instant::now();
 
@@ -39,7 +39,7 @@ impl Engine {
 
         let mut sinfo = SearchInfo::new();
 
-        for depth in 3..MAX_PLY {
+        for depth in 1..MAX_PLY {
             if !time.can_continue(
                 depth,
                 board,
@@ -56,9 +56,14 @@ impl Engine {
             sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board));
 
             for mv in sorted_mv {
+                if history.is_three_rep() {
+                    break;
+                }
+
                 let nb = board.make_move_new(mv);
                 sinfo.pv[0] = Some(mv);
-                let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo);
+                let new_history = history.push_hist_new(board.get_hash());
+                let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo, new_history);
 
                 if score > best_score {
                     best_score = score;
@@ -74,7 +79,14 @@ impl Engine {
                 }
             }
 
-            log_search_statistics(depth, best_mv, best_score, &start_of_search_instant, &sinfo);
+            log_search_statistics(
+                depth,
+                best_mv,
+                best_score,
+                &start_of_search_instant,
+                &sinfo,
+                &board,
+            );
         }
 
         best_mv.expect("unable to find best move")
@@ -91,12 +103,13 @@ impl Engine {
         mut depth: u8,
         ply: u8,
         sinfo: &mut SearchInfo,
+        history: History,
     ) -> i32 {
         bump!(NODES_SEARCHED);
 
         match board.status() {
             chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => return ply as i32 - OO,
+            chess::BoardStatus::Checkmate => return -OO + ply as i32,
             chess::BoardStatus::Stalemate => return 0,
         }
 
@@ -129,6 +142,10 @@ impl Engine {
             }
         }
 
+        if history.is_three_rep() {
+            return -OO;
+        }
+
         // Check extension
         let in_check = board.checkers().0 > 0;
         // Also avoid flooding the stack
@@ -152,7 +169,16 @@ impl Engine {
             sinfo.pv[ply as usize] = Some(mv);
 
             let new_board = board.make_move_new(mv);
-            let score = -self.negamax(&new_board, -beta, -alpha, depth - 1, ply + 1, sinfo);
+            let new_history: History = history.push_hist_new(new_board.get_hash());
+            let score = -self.negamax(
+                &new_board,
+                -beta,
+                -alpha,
+                depth - 1,
+                ply + 1,
+                sinfo,
+                new_history,
+            );
 
             if score >= beta {
                 self.tt.set(TranspositionEntry {

@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{collections::HashSet, str::FromStr, time::Instant};
 
 use chess::{Board, ChessMove, Piece};
 
@@ -35,18 +35,27 @@ pub fn log_search_statistics(
     best_score: i32,
     start: &Instant,
     sinfo: &SearchInfo,
+    board: &Board,
 ) {
-    unsafe {
-        let time = Instant::now().duration_since(*start).as_millis();
-        println!(
-            "info score cp {best_score} depth {depth} nodes {NODES_SEARCHED} time {time} pv {best_mv:?} {}",
-            sinfo.print()
-        );
-        println!(
-            "stats checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
-            (NODES_SEARCHED as f32).powf(1. / depth as f32),
-            (1000 * NODES_SEARCHED as u128) / (time + 1)
-        );
+    let who2move = match board.side_to_move() {
+        chess::Color::White => 1,
+        chess::Color::Black => -1,
+    };
+    if let Some(mv) = best_mv {
+        unsafe {
+            let time = Instant::now().duration_since(*start).as_millis();
+            println!(
+                "info score cp {} depth {depth} nodes {NODES_SEARCHED} time {time} pv {} {}",
+                best_score,
+                mv.to_string(),
+                sinfo.print()
+            );
+            println!(
+                "stats checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
+                (NODES_SEARCHED as f32).powf(1. / depth as f32),
+                (1000 * NODES_SEARCHED as u128) / (time + 1)
+            );
+        }
     }
 }
 
@@ -80,4 +89,72 @@ pub fn sort_moves(a: ChessMove, b: ChessMove, board: &Board) -> core::cmp::Order
     let b = score_move(b, board);
 
     b.cmp(&a)
+}
+
+/// Persistent data between games
+#[derive(Debug, Clone, Copy)]
+pub struct History {
+    /// History using hashes
+    history: [u64; 7],
+}
+
+impl History {
+    pub fn new() -> Self {
+        Self {
+            history: [1, 2, 3, 4, 5, 6, 7],
+        }
+    }
+
+    pub fn push_hist(&mut self, new_key: u64) {
+        // Don't push if the newest entry is the same
+        // This avoids a UCI bug where calling go multiple times fills up the history
+        if self.history[self.history.len() - 1] == new_key {
+            return;
+        }
+
+        self.history.copy_within(1.., 0);
+        self.history[self.history.len() - 1] = new_key;
+    }
+
+    pub fn push_hist_new(&self, new_key: u64) -> Self {
+        let mut l = self.clone();
+        l.history.copy_within(1.., 0);
+        l.history[self.history.len() - 1] = new_key;
+        l
+    }
+
+    pub fn is_three_rep(&self) -> bool {
+        self.history[6] == self.history[2]
+            && self.history[5] == self.history[1]
+            && self.history[0] == self.history[4]
+    }
+}
+
+mod tests {
+    use crate::utils::History;
+    use chess::{Board, ChessMove};
+    use std::str::FromStr;
+
+    #[test]
+    // 1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31
+    fn test_three_rep() {
+        let mut b =
+            Board::from_str("1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31").unwrap();
+        let mut h = History::new();
+        h.push_hist(b.get_hash());
+
+        for mvstr in [
+            "Rxb3", "Rc2", "Rb1+", "Ka2", "R1b4", "Ka1", "Rb1+", "Ka2", "R1b4",
+        ] {
+            assert!(!h.is_three_rep());
+
+            let mv = ChessMove::from_san(&b, mvstr).unwrap();
+            b = b.make_move_new(mv);
+            h.push_hist(b.get_hash());
+        }
+
+        assert!(h.is_three_rep());
+    }
+
+    // 1R6/5p2/8/1k1r4/3B4/P2PKP2/1P6/2R5 b - - 15 53
 }
