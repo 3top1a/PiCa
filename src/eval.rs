@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use chess::Board;
 
 use chess::Color::{Black, White};
@@ -84,3 +86,16 @@ pub fn eval(board: &Board) -> i32 {
 
     sc * who2move
 }
+
+
+
+#[test]
+fn sanity_check() {
+    assert!(eval(&Board::from_str("1qkq4/2q5/8/8/8/8/5PPP/7K w - - 0 1").unwrap()) < -2000);
+    assert!(eval(&Board::from_str("k7/ppp5/8/8/8/8/5Q2/4QKQ1 w - - 0 1").unwrap()) > 2000);
+}
+
+
+
+
+

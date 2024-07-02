@@ -95,13 +95,13 @@ pub fn sort_moves(a: ChessMove, b: ChessMove, board: &Board) -> core::cmp::Order
 #[derive(Debug, Clone, Copy)]
 pub struct History {
     /// History using hashes
-    history: [u64; 7],
+    history: [u64; 9],
 }
 
 impl History {
     pub fn new() -> Self {
         Self {
-            history: [1, 2, 3, 4, 5, 6, 7],
+            history: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         }
     }
 
@@ -124,9 +124,7 @@ impl History {
     }
 
     pub fn is_three_rep(&self) -> bool {
-        self.history[6] == self.history[2]
-            && self.history[5] == self.history[1]
-            && self.history[0] == self.history[4]
+        self.history[0] == self.history[4] && self.history[0] == self.history[8]
     }
 }
 
@@ -139,12 +137,12 @@ mod tests {
     // 1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31
     fn test_three_rep() {
         let mut b =
-            Board::from_str("1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31").unwrap();
+            Board::from_str("8/8/k3K3/8/8/2Q5/8/8 w - - 5 9").unwrap();
         let mut h = History::new();
         h.push_hist(b.get_hash());
 
         for mvstr in [
-            "Rxb3", "Rc2", "Rb1+", "Ka2", "R1b4", "Ka1", "Rb1+", "Ka2", "R1b4",
+            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3", "Ka6", "Qc2", "Ka5", "Qb3",
         ] {
             assert!(!h.is_three_rep());
 
@@ -152,7 +150,8 @@ mod tests {
             b = b.make_move_new(mv);
             h.push_hist(b.get_hash());
         }
-
+        
+        dbg!(h);
         assert!(h.is_three_rep());
     }
 

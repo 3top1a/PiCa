@@ -39,6 +39,13 @@ impl Engine {
 
         let mut sinfo = SearchInfo::new();
 
+        if history.is_three_rep() {
+            eprintln!("debug In a three repetition position, no moves possible");
+            assert!(false);
+        }
+
+        // keep track of the number of nodes last ply, if it doesn't change with another iteration we are screwed anyways
+        let mut nodes_last_ply = 0;
         for depth in 1..MAX_PLY {
             if !time.can_continue(
                 depth,
@@ -87,6 +94,12 @@ impl Engine {
                 &sinfo,
                 &board,
             );
+
+            if nodes_last_ply == unsafe { NODES_SEARCHED } {
+                println!("debug No change in searched nodes despite larger search depth, exiting early");
+                break;
+            }
+            nodes_last_ply = unsafe { NODES_SEARCHED };
         }
 
         best_mv.expect("unable to find best move")

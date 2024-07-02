@@ -70,10 +70,12 @@ fn main() {
 
                 if let Some(fen) = fen {
                     board = Board::from_str(fen.as_str()).expect("Parse fen");
+                    hist.push_hist(board.get_hash());
                 }
 
                 for mv in moves {
                     board = board.make_move_new(mv);
+                    hist.push_hist(board.get_hash());
                 }
             }
             UciMessage::Go {
@@ -135,7 +137,6 @@ fn main() {
 
                 let mv = eng.start(board, tc, hist);
                 println!("bestmove {mv}");
-                hist = hist.push_hist_new(board.make_move_new(mv).get_hash());
             }
             UciMessage::Quit => {
                 return;
