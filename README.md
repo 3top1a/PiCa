@@ -1,5 +1,17 @@
-# PiCa
-yet another chess engine
+# PiCA
+
+PiCA (*rPi Chess Automaton*, or *Practically Imbecilic Checkmate Attempter*) is my fourth attempt at creating a competent chess engine.
+It is written in Rust and optimized for the hardware of a Raspberry Pi Zero 2 W.
+
+Current features:
+- Alpha beta/Negamax search
+- Piece square tables
+- Check Extensions
+- Quiescence search
+- Iterative deepening
+- Transposition table
+- MVV-LVA and Hash Move
+- Delta Pruning
 
 
 ## Resources

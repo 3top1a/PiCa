@@ -177,6 +177,7 @@ impl Engine {
         let movegen = MoveGen::new_legal(board);
         let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
         sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board));
+        // Move the TT move to first position
         if let Some(tt_move) = entry.best_move {
             if let Some(index) = sorted_mv.iter().position(|&m| m == tt_move) {
                 sorted_mv.swap(0, index);

@@ -8,6 +8,9 @@ In order of importance:
     [ ] More idiomatic rust
     [ ] Make file with native cpu arg
 [ ] Try some another cache/table
+[ ] Chess960 support?
+[ ] MCTS?
+    [ ] Parallel MCTS?
 
 Done:
 [x] Qsearch
