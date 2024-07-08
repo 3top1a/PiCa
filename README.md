@@ -10,7 +10,7 @@ A list of resources that have helped me
 - [Vice tutorial series](https://www.youtube.com/watch?v=bGAfaepBco4&list=PLZ1QII7yudbc-Ky058TEaOstZHVbT-2hg)
 
 
-| version | elo change | LOS | changenotes        |
-|---------|------------|-----|--------------------|
-| 0.3     | ?          | ?   | 3fold rep checking |
-|         |            |     |                    |
+| version | elo change     | LOS  |
+|---------|----------------|------|
+| 0.0.3   | ?              | ?    |
+| 0.0.4   | 249.1 +/- 41.2 | 100% |

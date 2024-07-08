@@ -5,7 +5,7 @@ use chess::{Board, ChessMove, MoveGen};
 use crate::{
     bump,
     eval::eval,
-    stats::{self, CHECK_EXTENSION, NODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{self, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
     utils::{log_search_statistics, sort_moves, History, SearchInfo},
@@ -115,8 +115,8 @@ impl Engine {
     fn negamax(
         &mut self,
         board: &Board,
-        mut alpha: i32,
-        beta: i32,
+        mut alpha: i32, // minimum score that a node must reach in order to change the value of a previous node
+        beta: i32,      // Beta is the best-score the opponent
         mut depth: u8,
         ply: u8,
         sinfo: &mut SearchInfo,
@@ -130,10 +130,17 @@ impl Engine {
             chess::BoardStatus::Stalemate => return 0,
         }
 
-        // Horizon
-        // Also avoid stack overflow
-        if depth == 0 || ply > MAX_PLY {
-            return eval(board);
+        if history.is_three_rep() {
+            return -OO;
+        }
+
+        // Check extension
+        let in_check = board.checkers().0 > 0;
+
+        // QSearch to avoid Horizon effect
+        // TODO Try not allowing qsearch if in check
+        if (depth == 0 && !in_check) || ply > MAX_PLY {
+            return self.qsearch(board, alpha, beta, ply);
         }
 
         // Check TT
@@ -159,14 +166,10 @@ impl Engine {
             }
         }
 
-        if history.is_three_rep() {
-            return -OO;
-        }
-
-        // Check extension
-        let in_check = board.checkers().0 > 0;
-        // Also avoid flooding the stack
-        if in_check && ply < 20 {
+        // Check extention
+        // https://www.chessprogramming.org/Check_Extensions
+        // Also avoid flooding the stack by limiting it
+        if in_check && ply < MAX_PLY/2 {
             bump!(CHECK_EXTENSION);
             depth += 1
         };
@@ -227,6 +230,63 @@ impl Engine {
             },
             best_move,
         });
+
+        alpha
+    }
+
+    /// Quiescence Search
+    /// https://www.chessprogramming.org/Quiescence_Search
+    fn qsearch(&mut self, board: &Board, mut alpha: i32, beta: i32, ply: u8) -> i32 {
+        bump!(QNODES_SEARCHED);
+
+        let standpat = eval(board);
+
+        // Check if standpat causes a beta cutoff
+        if standpat >= beta {
+            return beta;
+        }
+
+        // Check if standpat may become a new alpha
+        if alpha < standpat {
+            alpha = standpat;
+        }
+
+        const BIG_DELTA: i32 = 977;
+        if standpat < alpha - BIG_DELTA {
+            // Happens 13k times in a depth 7 search    
+            return alpha;
+        }
+
+        match board.status() {
+            chess::BoardStatus::Ongoing => {}
+            chess::BoardStatus::Checkmate => return -OO + ply as i32,
+            chess::BoardStatus::Stalemate => return 0,
+        }
+
+        // TODO Add optional TT probing in qsearch
+        // https://www.talkchess.com/forum/viewtopic.php?t=47373
+
+        let mut movegen = MoveGen::new_legal(board);
+        let targets = board.color_combined(!board.side_to_move());
+        movegen.set_iterator_mask(*targets);
+
+        let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
+        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board));
+
+        for mv in sorted_mv {
+            let capture = board.piece_on(mv.get_dest()).is_some();
+            debug_assert!(capture);
+
+            let new_board = board.make_move_new(mv);
+            let score = -self.qsearch(&new_board, -beta, -alpha, ply + 1);
+
+            if score >= beta {
+                return beta;
+            }
+            if score > alpha {
+                alpha = score;
+            }
+        }
 
         alpha
     }

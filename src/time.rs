@@ -30,8 +30,8 @@ impl TimeManager {
         }
 
         let time_ms = Instant::now();
-        let ms =
-            time_ms.duration_since(start_of_search).as_millis() as u32 * estimate_time_branching_factor;
+        let ms = time_ms.duration_since(start_of_search).as_millis() as u32
+            * estimate_time_branching_factor;
         let board_time = self.board_time.unwrap_or(300000);
 
         // Normal board time

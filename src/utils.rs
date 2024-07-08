@@ -4,7 +4,7 @@ use chess::{Board, ChessMove, Piece};
 
 use crate::{
     engine::MAX_PLY,
-    stats::{CHECK_EXTENSION, NODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
 };
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ pub fn log_search_statistics(
         unsafe {
             let time = Instant::now().duration_since(*start).as_millis();
             println!(
-                "info score cp {} depth {depth} nodes {NODES_SEARCHED} time {time} pv {} {}",
+                "info score cp {} depth {depth} nodes {NODES_SEARCHED} qnodes {QNODES_SEARCHED} time {time} pv {} {}",
                 best_score,
                 mv.to_string(),
                 sinfo.print()

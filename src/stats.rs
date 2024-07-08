@@ -1,4 +1,5 @@
 pub static mut NODES_SEARCHED: u64 = 0;
+pub static mut QNODES_SEARCHED: u64 = 0;
 pub static mut CHECK_EXTENSION: i32 = 0;
 pub static mut TT_CHECK: i32 = 0;
 pub static mut TT_HIT: i32 = 0;
@@ -14,6 +15,7 @@ macro_rules! bump {
 
 pub fn reset() {
     unsafe {
+        QNODES_SEARCHED = 0;
         NODES_SEARCHED = 0;
         CHECK_EXTENSION = 0;
         TT_CHECK = 0;
