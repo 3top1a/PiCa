@@ -5,7 +5,7 @@ use chess::Board;
 use chess::Color::{Black, White};
 use chess::Piece;
 
-use crate::tables::PESTO;
+use crate::tables::{FLIP, PESTO};
 
 const BISHOP_PAIR_BONUS: i32 = 50;
 
@@ -37,6 +37,8 @@ pub fn eval(board: &Board) -> i32 {
     let mut mg_sc: i32 = 0; // Midgame score
     let mut eg_sc: i32 = 0; // Endgame score
 
+    debug_assert!(board.is_sane());
+
     // Calculate the game phase
     let total_phase = calculate_game_phase(board);
     let mg_weight = total_phase;
@@ -57,7 +59,7 @@ pub fn eval(board: &Board) -> i32 {
             for sq in pieces {
                 let sq_i = match color {
                     White => sq.to_index(),
-                    Black => sq.to_index() ^ 56, // Flip index for black
+                    Black => FLIP[sq.to_index()],
                 };
 
                 mg_sc += PESTO[sq_i][piece.to_index()][0] * color_mul;
@@ -87,15 +89,8 @@ pub fn eval(board: &Board) -> i32 {
     sc * who2move
 }
 
-
-
 #[test]
 fn sanity_check() {
     assert!(eval(&Board::from_str("1qkq4/2q5/8/8/8/8/5PPP/7K w - - 0 1").unwrap()) < -2000);
     assert!(eval(&Board::from_str("k7/ppp5/8/8/8/8/5Q2/4QKQ1 w - - 0 1").unwrap()) > 2000);
 }
-
-
-
-
-

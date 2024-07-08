@@ -40,9 +40,11 @@ impl Engine {
         let mut sinfo = SearchInfo::new();
 
         if history.is_three_rep() {
-            eprintln!("debug In a three repetition position, no moves possible");
-            assert!(false);
+            println!("debug In a three repetition position, no moves possible");
+            panic!();
         }
+
+        println!("{:?}", time);
 
         // keep track of the number of nodes last ply, if it doesn't change with another iteration we are screwed anyways
         let mut nodes_last_ply = 0;
@@ -96,7 +98,9 @@ impl Engine {
             );
 
             if nodes_last_ply == unsafe { NODES_SEARCHED } {
-                println!("debug No change in searched nodes despite larger search depth, exiting early");
+                println!(
+                    "debug No change in searched nodes despite larger search depth, exiting early"
+                );
                 break;
             }
             nodes_last_ply = unsafe { NODES_SEARCHED };

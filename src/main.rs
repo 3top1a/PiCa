@@ -89,8 +89,8 @@ fn main() {
                         vampirc_uci::UciTimeControl::MoveTime(ms) => TimeManager {
                             max_depth: None,
                             max_nodes: None,
-                            max_ms: Some(ms.num_milliseconds() as u32),
-                            max_allowed_time: Some(ms.num_milliseconds() as u32),
+                            board_time: None,
+                            max_allowed_time_now: Some(ms.num_milliseconds() as u32),
                         },
                         vampirc_uci::UciTimeControl::TimeLeft {
                             white_time,
@@ -99,8 +99,8 @@ fn main() {
                         } => TimeManager {
                             max_depth: None,
                             max_nodes: None,
-                            max_ms: None,
-                            max_allowed_time: {
+                            max_allowed_time_now: None,
+                            board_time: {
                                 let w = if let Some(white_time) = white_time {
                                     white_time.num_milliseconds()
                                 } else {
@@ -122,16 +122,16 @@ fn main() {
                         _ => TimeManager {
                             max_depth: None,
                             max_nodes: None,
-                            max_ms: None,
-                            max_allowed_time: None,
+                            board_time: None,
+                            max_allowed_time_now: None,
                         },
                     }
                 } else {
                     TimeManager {
                         max_depth: None,
                         max_nodes: None,
-                        max_ms: Some(5000),
-                        max_allowed_time: None,
+                        board_time: Some(300000), // 5 minutes
+                        max_allowed_time_now: Some(5000),
                     }
                 };
 

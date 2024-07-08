@@ -136,13 +136,13 @@ mod tests {
     #[test]
     // 1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31
     fn test_three_rep() {
-        let mut b =
-            Board::from_str("8/8/k3K3/8/8/2Q5/8/8 w - - 5 9").unwrap();
+        let mut b = Board::from_str("8/8/k3K3/8/8/2Q5/8/8 w - - 5 9").unwrap();
         let mut h = History::new();
         h.push_hist(b.get_hash());
 
         for mvstr in [
-            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3", "Ka6", "Qc2", "Ka5", "Qb3",
+            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3", "Ka6", "Qc2", "Ka5",
+            "Qb3",
         ] {
             assert!(!h.is_three_rep());
 
@@ -150,7 +150,7 @@ mod tests {
             b = b.make_move_new(mv);
             h.push_hist(b.get_hash());
         }
-        
+
         dbg!(h);
         assert!(h.is_three_rep());
     }
