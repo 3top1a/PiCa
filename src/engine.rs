@@ -236,7 +236,7 @@ impl Engine {
 
     /// Quiescence Search
     /// https://www.chessprogramming.org/Quiescence_Search
-    fn qsearch(&mut self, board: &Board, mut alpha: i32, beta: i32, ply: u8) -> i32 {
+    fn qsearch(&self, board: &Board, mut alpha: i32, beta: i32, ply: u8) -> i32 {
         bump!(QNODES_SEARCHED);
 
         let standpat = eval(board);

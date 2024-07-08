@@ -20,8 +20,7 @@ impl Arena {
 
     pub fn start(&mut self) {
         println!("New arena");
-        let mut moves = 0;
-        for _movei in 0..64 {
+        for (moves, _movei) in (0..64).enumerate() {
             match self.board.status() {
                 chess::BoardStatus::Checkmate => {
                     // Check mate (soory)
@@ -29,16 +28,15 @@ impl Arena {
                     println!("Took {} moves", moves);
                     return;
                 }
-                chess::BoardStatus::Stalemate => assert!(false),
+                chess::BoardStatus::Stalemate => panic!(),
                 chess::BoardStatus::Ongoing => {}
             }
 
             let mv = self
                 .eng
                 .start(self.board, TimeManager::test_preset(), History::new());
-            println!("{} {}", mv, self.board.to_string());
+            println!("{} {}", mv, self.board);
             self.board = self.board.make_move_new(mv);
-            moves += 1;
         }
     }
 }

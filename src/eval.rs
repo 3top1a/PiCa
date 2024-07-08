@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use chess::Board;
 
 use chess::Color::{Black, White};
@@ -29,7 +27,7 @@ fn calculate_game_phase(board: &Board) -> i32 {
         phase -= value * (white_pieces + black_pieces) as i32;
     }
 
-    phase.max(0).min(24)
+    phase.clamp(0, 24)
 }
 
 /// Evaluation function.
@@ -91,6 +89,8 @@ pub fn eval(board: &Board) -> i32 {
 
 #[test]
 fn sanity_check() {
+    use std::str::FromStr;
+
     assert!(eval(&Board::from_str("1qkq4/2q5/8/8/8/8/5PPP/7K w - - 0 1").unwrap()) < -2000);
     assert!(eval(&Board::from_str("k7/ppp5/8/8/8/8/5Q2/4QKQ1 w - - 0 1").unwrap()) > 2000);
 }

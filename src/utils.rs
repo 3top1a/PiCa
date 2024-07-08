@@ -37,17 +37,17 @@ pub fn log_search_statistics(
     sinfo: &SearchInfo,
     board: &Board,
 ) {
-    let who2move = match board.side_to_move() {
+    /*let who2move = match board.side_to_move() {
         chess::Color::White => 1,
         chess::Color::Black => -1,
-    };
+    };*/
     if let Some(mv) = best_mv {
         unsafe {
             let time = Instant::now().duration_since(*start).as_millis();
             println!(
                 "info score cp {} depth {depth} nodes {NODES_SEARCHED} qnodes {QNODES_SEARCHED} time {time} pv {} {}",
                 best_score,
-                mv.to_string(),
+                mv,
                 sinfo.print()
             );
             println!(
@@ -71,10 +71,7 @@ pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
 
 // TODO Remove this function and reorded table
 fn piece_to_index(a: Option<Piece>) -> usize {
-    match a {
-        None => 0,
-        Some(a) => a.to_index() + 1,
-    }
+    return a.map_or(0, |a| a.to_index() + 1)
 }
 
 fn score_move(mv: ChessMove, b: &Board) -> u8 {
@@ -100,7 +97,7 @@ pub struct History {
 
 impl History {
     pub fn new() -> Self {
-        Self {
+        return Self {
             history: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         }
     }
@@ -117,14 +114,14 @@ impl History {
     }
 
     pub fn push_hist_new(&self, new_key: u64) -> Self {
-        let mut l = self.clone();
-        l.history.copy_within(1.., 0);
-        l.history[self.history.len() - 1] = new_key;
-        l
+        let mut newhist = self.clone();
+        newhist.history.copy_within(1.., 0);
+        newhist.history[self.history.len() - 1] = new_key;
+        return newhist
     }
 
     pub fn is_three_rep(&self) -> bool {
-        self.history[0] == self.history[4] && self.history[0] == self.history[8]
+        return self.history[0] == self.history[4] && self.history[0] == self.history[8]
     }
 }
 

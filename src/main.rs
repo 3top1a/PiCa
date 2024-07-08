@@ -48,11 +48,11 @@ fn main() {
             UciMessage::SetOption { name, value } => {
                 if let Some(value) = value {
                     match name.as_str() {
-                        "Hash" => tt_size_mb = value.parse().unwrap(),
-                        _ => println!("> Invalid name!"),
+                        "Hash" => tt_size_mb = value.parse().expect("parse"),
+                        _ => eprintln!("> Invalid name!"),
                     }
                 } else {
-                    println!("> No value recieved!")
+                    eprintln!("> No value recieved!")
                 }
 
                 // Reset engine
@@ -101,17 +101,8 @@ fn main() {
                             max_nodes: None,
                             max_allowed_time_now: None,
                             board_time: {
-                                let w = if let Some(white_time) = white_time {
-                                    white_time.num_milliseconds()
-                                } else {
-                                    60000
-                                };
-
-                                let b = if let Some(black_time) = black_time {
-                                    black_time.num_milliseconds()
-                                } else {
-                                    60000
-                                };
+                                let w = white_time.map_or(60000, |white_time| white_time.num_milliseconds());
+                                let b = black_time.map_or(60000, |black_time| black_time.num_milliseconds());
 
                                 match color {
                                     chess::Color::Black => Some(b as u32),
@@ -142,10 +133,10 @@ fn main() {
                 return;
             }
             UciMessage::Unknown(str, _) => {
-                println!("> Could not parse message `{str}`!");
+                eprintln!("> Could not parse message `{str}`!");
             }
             _ => {
-                println!("> Unimplemented message `{msg}`!");
+                eprintln!("> Unimplemented message `{msg}`!");
             }
         }
     }

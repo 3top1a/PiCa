@@ -42,7 +42,6 @@ impl TranspositionEntry {
 pub struct TT {
     // TODO maybe get rid of CacheTable in favor of custom impl
     t: CacheTable<TranspositionEntry>,
-    n_entries: usize,
 }
 
 impl TT {
@@ -52,7 +51,6 @@ impl TT {
 
         Self {
             t: CacheTable::new(n_entries, TranspositionEntry::default()),
-            n_entries,
         }
     }
 
