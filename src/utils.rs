@@ -51,7 +51,7 @@ pub fn log_search_statistics(
                 sinfo.print()
             );
             println!(
-                "stats checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
+                "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
                 (NODES_SEARCHED as f32).powf(1. / depth as f32),
                 (1000 * NODES_SEARCHED as u128) / (time + 1)
             );
@@ -148,7 +148,6 @@ mod tests {
             h.push_hist(b.get_hash());
         }
 
-        dbg!(h);
         assert!(h.is_three_rep());
     }
 

@@ -17,12 +17,14 @@ pub const MAX_PLY: u8 = 200;
 
 pub struct Engine {
     tt: TT,
+    pub info: bool,
 }
 
 impl Engine {
     pub fn new(tt_size_mb: usize) -> Self {
         Self {
             tt: TT::new_with_size_mb(tt_size_mb),
+            info: false,
         }
     }
 
@@ -43,8 +45,6 @@ impl Engine {
             println!("debug In a three repetition position, no moves possible");
             panic!();
         }
-
-        println!("{:?}", time);
 
         // keep track of the number of nodes last ply, if it doesn't change with another iteration we are screwed anyways
         let mut nodes_last_ply = 0;
@@ -88,14 +88,16 @@ impl Engine {
                 }
             }
 
-            log_search_statistics(
-                depth,
-                best_mv,
-                best_score,
-                &start_of_search_instant,
-                &sinfo,
-                &board,
-            );
+            if self.info {
+                log_search_statistics(
+                    depth,
+                    best_mv,
+                    best_score,
+                    &start_of_search_instant,
+                    &sinfo,
+                    &board,
+                );
+            }
 
             if nodes_last_ply == unsafe { NODES_SEARCHED } {
                 println!(

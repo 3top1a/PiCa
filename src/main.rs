@@ -20,6 +20,7 @@ use vampirc_uci::UciMessage;
 
 fn main() {
     let mut tt_size_mb = 256;
+    let mut info = false;
 
     let mut board = Board::default();
     let mut eng = Engine::new(tt_size_mb);
@@ -34,6 +35,7 @@ fn main() {
 
                 // List options
                 println!("option name Hash type spin default 256 min 1 max 8192");
+                println!("option name Info type check default false");
 
                 println!("uciok");
             }
@@ -43,12 +45,14 @@ fn main() {
             UciMessage::UciNewGame => {
                 board = Board::default();
                 eng = Engine::new(tt_size_mb);
+                eng.info = info;
                 hist = History::new();
             }
             UciMessage::SetOption { name, value } => {
                 if let Some(value) = value {
                     match name.as_str() {
                         "Hash" => tt_size_mb = value.parse().expect("parse"),
+                        "Info" => info = value.parse().expect("parse"),
                         _ => eprintln!("> Invalid name!"),
                     }
                 } else {
@@ -57,6 +61,7 @@ fn main() {
 
                 // Reset engine
                 eng = Engine::new(tt_size_mb);
+                eng.info = info;
                 hist = History::new();
             }
             UciMessage::Position {
