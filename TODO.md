@@ -1,6 +1,7 @@
 In order of importance:
 
 [ ] One more pruning technique
+[ ] Make it respond to `stop` and actually respect time management more
 [ ] Meta analysis
     [ ] Automatic testing against old version
     [ ] CI/CD stuff
