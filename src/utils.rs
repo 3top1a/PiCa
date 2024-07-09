@@ -10,12 +10,16 @@ use crate::{
 #[derive(Debug)]
 pub struct SearchInfo {
     pub pv: [Option<ChessMove>; MAX_PLY as usize],
+    pub killers: [[Option<ChessMove>; MAX_PLY as usize]; 2],
+    pub history: [[u32; 64]; 64],
 }
 
 impl SearchInfo {
     pub fn new() -> Self {
         Self {
             pv: [None; MAX_PLY as usize],
+            killers: [[None; MAX_PLY as usize]; 2],
+            history: [[0; 64]; 64],
         }
     }
 
@@ -74,16 +78,45 @@ fn piece_to_index(a: Option<Piece>) -> usize {
     return a.map_or(0, |a| a.to_index() + 1)
 }
 
-fn score_move(mv: ChessMove, b: &Board) -> u8 {
+// TODO Tune this
+const KILLER_VALUE: u32 = 20;
+const PV_VALUE: u32 = 50;
+
+
+fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8) -> u32 {
+    // Check if the move is in the PV
+    if sinfo.pv[ply as usize] == Some(mv) {
+        return PV_VALUE;
+    }
+    
     let attacker = piece_to_index(b.piece_on(mv.get_source()));
     let victim = piece_to_index(b.piece_on(mv.get_dest()));
 
-    MVV_LVA[victim][attacker]
+    let mvv_lva = MVV_LVA[victim][attacker] as u32;
+    
+    // If it's a capture, return MVV-LVA score
+    if mvv_lva > 0 {
+        return mvv_lva;
+    }
+
+    // Check if the move is a killer move
+    if sinfo.killers[0][ply as usize] == Some(mv) {
+        return KILLER_VALUE;
+    }
+    if sinfo.killers[1][ply as usize] == Some(mv) {
+        return KILLER_VALUE - 10;
+    }
+
+    // Otherwise, return the history score
+    // Through testing it checks less nodes but is slower overall
+    // sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()]
+
+    mvv_lva
 }
 
-pub fn sort_moves(a: ChessMove, b: ChessMove, board: &Board) -> core::cmp::Ordering {
-    let a = score_move(a, board);
-    let b = score_move(b, board);
+pub fn sort_moves(a: ChessMove, b: ChessMove, board: &Board, sinfo: &SearchInfo, ply: u8) -> core::cmp::Ordering {
+    let a = score_move(a, board, sinfo, ply);
+    let b = score_move(b, board, sinfo, ply);
 
     b.cmp(&a)
 }

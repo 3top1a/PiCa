@@ -62,7 +62,7 @@ impl Engine {
 
             let movegen = MoveGen::new_legal(&board);
             let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board));
+            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
 
             for mv in sorted_mv {
                 if history.is_three_rep() {
@@ -142,7 +142,7 @@ impl Engine {
         // QSearch to avoid Horizon effect
         // TODO Try not allowing qsearch if in check
         if (depth == 0 && !in_check) || ply > MAX_PLY {
-            return self.qsearch(board, alpha, beta, ply);
+            return self.qsearch(board, alpha, beta, &sinfo, ply);
         }
 
         // Check TT
@@ -178,8 +178,9 @@ impl Engine {
 
         let movegen = MoveGen::new_legal(board);
         let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board));
+        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
         // Move the TT move to first position
+        // TODO this is shit
         if let Some(tt_move) = entry.best_move {
             if let Some(index) = sorted_mv.iter().position(|&m| m == tt_move) {
                 sorted_mv.swap(0, index);
@@ -188,7 +189,7 @@ impl Engine {
 
         let mut best_move = None;
         for mv in sorted_mv {
-            // let capture = board.piece_on(mv.get_dest()).is_some();
+            let capture = board.piece_on(mv.get_dest()).is_some();
             sinfo.pv[ply as usize] = Some(mv);
 
             let new_board = board.make_move_new(mv);
@@ -211,11 +212,21 @@ impl Engine {
                     node_type: NodeType::LowerBound,
                     best_move: Some(mv),
                 });
+
+                if !capture {
+                    sinfo.killers[1][ply as usize] = sinfo.killers[0][ply as usize];
+                    sinfo.killers[0][ply as usize] = Some(mv);
+                }
+
                 return beta;
             }
+
             if score > alpha {
                 alpha = score;
                 best_move = Some(mv);
+                if !capture {
+                    sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] += (depth as u32).pow(2);
+                }
             }
         }
 
@@ -239,7 +250,7 @@ impl Engine {
 
     /// Quiescence Search
     /// https://www.chessprogramming.org/Quiescence_Search
-    fn qsearch(&self, board: &Board, mut alpha: i32, beta: i32, ply: u8) -> i32 {
+    fn qsearch(&self, board: &Board, mut alpha: i32, beta: i32, sinfo: &SearchInfo, ply: u8) -> i32 {
         bump!(QNODES_SEARCHED);
 
         let mut movegen = MoveGen::new_legal(board);
@@ -275,14 +286,14 @@ impl Engine {
         movegen.set_iterator_mask(*targets);
 
         let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board));
+        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
 
         for mv in sorted_mv {
             let capture = board.piece_on(mv.get_dest()).is_some();
             debug_assert!(capture);
 
             let new_board = board.make_move_new(mv);
-            let score = -self.qsearch(&new_board, -beta, -alpha, ply + 1);
+            let score = -self.qsearch(&new_board, -beta, -alpha, sinfo, ply + 1);
 
             if score >= beta {
                 return beta;

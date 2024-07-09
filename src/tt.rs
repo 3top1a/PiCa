@@ -58,7 +58,7 @@ impl TT {
         self.t.add(a.key, a);
     }
 
-    pub fn get(&mut self, hash: u64) -> TranspositionEntry {
+    pub fn get(&self, hash: u64) -> TranspositionEntry {
         self.t.get(hash).unwrap_or_default()
     }
 }

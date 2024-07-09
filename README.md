@@ -10,8 +10,13 @@ Current features:
 - Quiescence search
 - Iterative deepening
 - Transposition table
-- MVV-LVA and Hash Move
 - Delta Pruning
+- Move ordering
+  - MVV-LVA
+  - Hash move
+  - Killers
+  - History Heuristic
+  - PV
 
 
 ## Resources
@@ -26,3 +31,4 @@ A list of resources that have helped me
 |---------|----------------|------|
 | 0.0.3   | ?              | ?    |
 | 0.0.4   | 249.1 +/- 41.2 | 100% |
+| 0.0.5   | 96.2 +/- 47.8  | 100% |

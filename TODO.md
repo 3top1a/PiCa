@@ -1,12 +1,11 @@
 In order of importance:
 
-[ ] Rewrite eval from scratch
 [ ] One more pruning technique
 [ ] Meta analysis
     [ ] Automatic testing against old version
     [ ] CI/CD stuff
     [ ] More idiomatic rust
-    [ ] Make file with native cpu arg
+    [ ] Makefile with native cpu arg
 [ ] Try some another cache/table
 [ ] Chess960 support?
 [ ] MCTS?
@@ -14,3 +13,4 @@ In order of importance:
 
 Done:
 [x] Qsearch
+[x] Rewrite eval from scratch
