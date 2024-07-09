@@ -1,30 +1,26 @@
-use chess::Board;
+use chess::{Board, MoveGen, EMPTY};
 
 use chess::Color::{Black, White};
 use chess::Piece;
 
-use crate::tables::{FLIP, PESTO};
+use crate::tables::{EG, FLIP, MG};
 
-const BISHOP_PAIR_BONUS: i32 = 50;
+
+const PIECE_PHASE_VALUES: [(Piece, i32); 5] = [
+    (Piece::Pawn, 0),
+    (Piece::Knight, 1),
+    (Piece::Bishop, 1),
+    (Piece::Rook, 2),
+    (Piece::Queen, 4),
+];
 
 /// Helper function to calculate the game phase.
 fn calculate_game_phase(board: &Board) -> i32 {
     let mut phase = 24;
-
-    // Predefined values for phase decrement based on remaining pieces.
-    let piece_phase_values = [
-        (Piece::Pawn, 0), // Pawns do not affect the phase incrementally
-        (Piece::Knight, 1),
-        (Piece::Bishop, 1),
-        (Piece::Rook, 2),
-        (Piece::Queen, 4),
-    ];
-
-    for (piece, value) in piece_phase_values.iter() {
-        let white_pieces = (board.pieces(*piece) & board.color_combined(White)).popcnt();
-        let black_pieces = (board.pieces(*piece) & board.color_combined(Black)).popcnt();
-
-        phase -= value * (white_pieces + black_pieces) as i32;
+    
+    for &(piece, value) in PIECE_PHASE_VALUES.iter() {
+        let pieces = board.pieces(piece).popcnt();
+        phase -= value * (pieces) as i32;
     }
 
     phase.clamp(0, 24)
@@ -42,6 +38,7 @@ pub fn eval(board: &Board) -> i32 {
     let mg_weight = total_phase;
     let eg_weight = 24 - total_phase;
 
+    // Get Pesto values
     for color in [White, Black] {
         let color_mul = if color == White { 1 } else { -1 };
 
@@ -60,21 +57,16 @@ pub fn eval(board: &Board) -> i32 {
                     Black => FLIP[sq.to_index()],
                 };
 
-                mg_sc += PESTO[sq_i][piece.to_index()][0] * color_mul;
-                eg_sc += PESTO[sq_i][piece.to_index()][1] * color_mul;
+                mg_sc += MG[piece.to_index()][sq_i] * color_mul;
+                eg_sc += EG[piece.to_index()][sq_i] * color_mul;
             }
         }
     }
 
-    // Bishop pair bonuses
-    if (board.pieces(Piece::Bishop) & board.color_combined(White)).popcnt() >= 2 {
-        mg_sc += BISHOP_PAIR_BONUS;
-        eg_sc += BISHOP_PAIR_BONUS;
-    }
-    if (board.pieces(Piece::Bishop) & board.color_combined(Black)).popcnt() >= 2 {
-        mg_sc -= BISHOP_PAIR_BONUS;
-        eg_sc -= BISHOP_PAIR_BONUS;
-    }
+    // Tempo bonus I guess
+    // From https://www.chessprogramming.org/Tempo:
+    // > That bonus is useful mainly in the opening and middle game positions, but can be counterproductive in the endgame. 
+    mg_sc += 10;
 
     let who2move = match board.side_to_move() {
         White => 1,

@@ -240,6 +240,8 @@ impl Engine {
     fn qsearch(&self, board: &Board, mut alpha: i32, beta: i32, ply: u8) -> i32 {
         bump!(QNODES_SEARCHED);
 
+        let mut movegen = MoveGen::new_legal(board);
+
         let standpat = eval(board);
 
         // Check if standpat causes a beta cutoff
@@ -267,7 +269,6 @@ impl Engine {
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
 
-        let mut movegen = MoveGen::new_legal(board);
         let targets = board.color_combined(!board.side_to_move());
         movegen.set_iterator_mask(*targets);
 
