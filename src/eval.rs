@@ -1,4 +1,4 @@
-use chess::{Board, MoveGen, EMPTY};
+use chess::{Board, Color, MoveGen, ALL_SQUARES, EMPTY};
 
 use chess::Color::{Black, White};
 use chess::Piece;
@@ -6,25 +6,9 @@ use chess::Piece;
 use crate::tables::{EG, FLIP, MG};
 
 
-const PIECE_PHASE_VALUES: [(Piece, i32); 5] = [
-    (Piece::Pawn, 0),
-    (Piece::Knight, 1),
-    (Piece::Bishop, 1),
-    (Piece::Rook, 2),
-    (Piece::Queen, 4),
+const PIECE_PHASE_VALUES: [i32; 6] = [
+    0, 1, 1, 2, 4, 0
 ];
-
-/// Helper function to calculate the game phase.
-fn calculate_game_phase(board: &Board) -> i32 {
-    let mut phase = 24;
-    
-    for &(piece, value) in PIECE_PHASE_VALUES.iter() {
-        let pieces = board.pieces(piece).popcnt();
-        phase -= value * (pieces) as i32;
-    }
-
-    phase.clamp(0, 24)
-}
 
 /// Evaluation function.
 pub fn eval(board: &Board) -> i32 {
@@ -34,31 +18,22 @@ pub fn eval(board: &Board) -> i32 {
     debug_assert!(board.is_sane());
 
     // Calculate the game phase
-    let total_phase = calculate_game_phase(board);
-    let mg_weight = total_phase;
-    let eg_weight = 24 - total_phase;
+    let mut game_phase = 0;
 
     // Get Pesto values
-    for color in [White, Black] {
-        let color_mul = if color == White { 1 } else { -1 };
+    for square in *board.combined() {
+        if let Some(piece) = board.piece_on(square) {
+            let color = unsafe { board.color_on(square).unwrap_unchecked() };
 
-        for piece in [
-            Piece::Pawn,
-            Piece::Knight,
-            Piece::Bishop,
-            Piece::Rook,
-            Piece::Queen,
-            Piece::King,
-        ] {
-            let pieces = board.pieces(piece) & board.color_combined(color);
-            for sq in pieces {
-                let sq_i = match color {
-                    White => sq.to_index(),
-                    Black => FLIP[sq.to_index()],
-                };
+            game_phase += PIECE_PHASE_VALUES[piece.to_index()];
+            let sq_i = square.to_index();
 
-                mg_sc += MG[piece.to_index()][sq_i] * color_mul;
-                eg_sc += EG[piece.to_index()][sq_i] * color_mul;
+            if color == Color::White {
+                mg_sc += MG[piece.to_index()][sq_i];
+                eg_sc += EG[piece.to_index()][sq_i];
+            } else {
+                mg_sc -= MG[piece.to_index()][sq_i ^ 56];
+                eg_sc -= EG[piece.to_index()][sq_i ^ 56];
             }
         }
     }
@@ -74,6 +49,9 @@ pub fn eval(board: &Board) -> i32 {
     };
 
     // Tapered score
+    let game_phase = game_phase.min(24);
+    let mg_weight = game_phase;
+    let eg_weight = 24 - game_phase;
     let sc = (mg_sc * mg_weight + eg_sc * eg_weight) / 24;
 
     sc * who2move
