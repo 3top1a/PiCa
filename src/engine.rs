@@ -16,8 +16,17 @@ pub const OO: i32 = 10000;
 pub const MAX_PLY: u8 = 200;
 
 pub struct Engine {
-    tt: TT,
+    pub tt: TT,
     pub info: bool,
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self {
+            tt: TT::new_with_size_mb(128),
+            info: false,
+        }
+    }
 }
 
 impl Engine {
@@ -99,7 +108,7 @@ impl Engine {
                 );
             }
 
-            if nodes_last_ply == unsafe { NODES_SEARCHED } {
+            if nodes_last_ply == unsafe { NODES_SEARCHED } && depth > 12 {
                 println!(
                     "debug No change in searched nodes despite larger search depth, exiting early"
                 );

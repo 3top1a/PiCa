@@ -51,8 +51,8 @@ impl TimeManager {
 
     pub fn test_preset() -> Self {
         Self {
-            board_time: Some(2500),
-            max_allowed_time_now: None,
+            board_time: None,
+            max_allowed_time_now: Some(5000),
             max_depth: None,
             max_nodes: None,
         }

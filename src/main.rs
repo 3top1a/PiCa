@@ -20,7 +20,7 @@ use vampirc_uci::UciMessage;
 
 fn main() {
     let mut tt_size_mb = 256;
-    let mut info = false;
+    let mut info = true;
 
     let mut board = Board::default();
     let mut eng = Engine::new(tt_size_mb);
@@ -35,7 +35,7 @@ fn main() {
 
                 // List options
                 println!("option name Hash type spin default 256 min 1 max 8192");
-                println!("option name Info type check default false");
+                println!("option name Info type check default true");
 
                 println!("uciok");
             }

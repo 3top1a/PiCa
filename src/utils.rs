@@ -9,16 +9,16 @@ use crate::{
 
 #[derive(Debug)]
 pub struct SearchInfo {
-    pub pv: [Option<ChessMove>; MAX_PLY as usize],
-    pub killers: [[Option<ChessMove>; MAX_PLY as usize]; 2],
+    pub pv: [Option<ChessMove>; MAX_PLY as usize + 1],
+    pub killers: [[Option<ChessMove>; MAX_PLY as usize + 1]; 2],
     pub history: [[u32; 64]; 64],
 }
 
 impl SearchInfo {
     pub fn new() -> Self {
         Self {
-            pv: [None; MAX_PLY as usize],
-            killers: [[None; MAX_PLY as usize]; 2],
+            pv: [None; MAX_PLY as usize + 1],
+            killers: [[None; MAX_PLY as usize + 1]; 2],
             history: [[0; 64]; 64],
         }
     }

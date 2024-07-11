@@ -1,5 +1,4 @@
 use chess::Color;
-
 use crate::*;
 
 /// A chess engine arena, where two of the same engine battle it out
@@ -51,8 +50,12 @@ fn test_arena() {
 macro_rules! nextmoveassert {
     ($fen:expr, $move:expr) => {
         use chess::ChessMove;
+        use crate::tt::TT;
         let board = Board::from_str($fen).unwrap();
-        let mv = Engine::new(256).start(board, TimeManager::test_preset(), History::new());
+        let mv = Engine {
+            tt: TT::new_with_size_mb(256),
+            info: true,
+        }.start(board, TimeManager::test_preset(), History::new());
         let bestmv = ChessMove::from_san(&board, $move).unwrap();
         assert_eq!(
             mv.to_string(),
@@ -113,8 +116,6 @@ r2qnrnk/p2b2b1/1p1p2pp/2pPpp2/1PP1P3/PRNBB3/3QNPPP/5RK1 w - - bm f4;"
 #[test]
 /// https://www.stmintz.com/ccc/index.php?id=476109
 fn endgames() {
-    let engine = Engine::new(256);
-
     // https://www.stmintz.com/ccc/index.php?id=391553
     let positions = "3k4/8/4K3/2R5/8/8/8/8 w - - bm Rc1
 4k3/8/4K3/8/8/8/2R5/8 w - - 2 2 bm Rc8
