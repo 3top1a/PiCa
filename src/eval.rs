@@ -5,10 +5,7 @@ use chess::Piece;
 
 use crate::tables::{EG, FLIP, MG};
 
-
-const PIECE_PHASE_VALUES: [i32; 6] = [
-    0, 1, 1, 2, 4, 0
-];
+const PIECE_PHASE_VALUES: [i32; 6] = [0, 1, 1, 2, 4, 0];
 
 /// Evaluation function.
 pub fn eval(board: &Board) -> i32 {
@@ -40,7 +37,7 @@ pub fn eval(board: &Board) -> i32 {
 
     // Tempo bonus I guess
     // From https://www.chessprogramming.org/Tempo:
-    // > That bonus is useful mainly in the opening and middle game positions, but can be counterproductive in the endgame. 
+    // > That bonus is useful mainly in the opening and middle game positions, but can be counterproductive in the endgame.
     mg_sc += 10;
 
     let who2move = match board.side_to_move() {

@@ -171,7 +171,7 @@ impl Engine {
         // Check extention
         // https://www.chessprogramming.org/Check_Extensions
         // Also avoid flooding the stack by limiting it
-        if in_check && ply < MAX_PLY/2 {
+        if in_check && ply < MAX_PLY / 2 {
             bump!(CHECK_EXTENSION);
             depth += 1
         };
@@ -225,7 +225,8 @@ impl Engine {
                 alpha = score;
                 best_move = Some(mv);
                 if !capture {
-                    sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] += (depth as u32).pow(2);
+                    sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] +=
+                        (depth as u32).pow(2);
                 }
             }
         }
@@ -250,7 +251,14 @@ impl Engine {
 
     /// Quiescence Search
     /// https://www.chessprogramming.org/Quiescence_Search
-    fn qsearch(&self, board: &Board, mut alpha: i32, beta: i32, sinfo: &SearchInfo, ply: u8) -> i32 {
+    fn qsearch(
+        &self,
+        board: &Board,
+        mut alpha: i32,
+        beta: i32,
+        sinfo: &SearchInfo,
+        ply: u8,
+    ) -> i32 {
         bump!(QNODES_SEARCHED);
 
         let mut movegen = MoveGen::new_legal(board);
@@ -269,7 +277,7 @@ impl Engine {
 
         const BIG_DELTA: i32 = 977;
         if standpat < alpha - BIG_DELTA {
-            // Happens 13k times in a depth 7 search    
+            // Happens 13k times in a depth 7 search
             return alpha;
         }
 

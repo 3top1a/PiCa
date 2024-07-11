@@ -75,25 +75,24 @@ pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
 
 // TODO Remove this function and reorded table
 fn piece_to_index(a: Option<Piece>) -> usize {
-    return a.map_or(0, |a| a.to_index() + 1)
+    return a.map_or(0, |a| a.to_index() + 1);
 }
 
 // TODO Tune this
 const KILLER_VALUE: u32 = 20;
 const PV_VALUE: u32 = 50;
 
-
 fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8) -> u32 {
     // Check if the move is in the PV
     if sinfo.pv[ply as usize] == Some(mv) {
         return PV_VALUE;
     }
-    
+
     let attacker = piece_to_index(b.piece_on(mv.get_source()));
     let victim = piece_to_index(b.piece_on(mv.get_dest()));
 
     let mvv_lva = MVV_LVA[victim][attacker] as u32;
-    
+
     // If it's a capture, return MVV-LVA score
     if mvv_lva > 0 {
         return mvv_lva;
@@ -114,7 +113,13 @@ fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8) -> u32 {
     mvv_lva
 }
 
-pub fn sort_moves(a: ChessMove, b: ChessMove, board: &Board, sinfo: &SearchInfo, ply: u8) -> core::cmp::Ordering {
+pub fn sort_moves(
+    a: ChessMove,
+    b: ChessMove,
+    board: &Board,
+    sinfo: &SearchInfo,
+    ply: u8,
+) -> core::cmp::Ordering {
     let a = score_move(a, board, sinfo, ply);
     let b = score_move(b, board, sinfo, ply);
 
@@ -132,7 +137,7 @@ impl History {
     pub fn new() -> Self {
         return Self {
             history: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        }
+        };
     }
 
     pub fn push_hist(&mut self, new_key: u64) {
@@ -150,11 +155,11 @@ impl History {
         let mut newhist = self.clone();
         newhist.history.copy_within(1.., 0);
         newhist.history[self.history.len() - 1] = new_key;
-        return newhist
+        return newhist;
     }
 
     pub fn is_three_rep(&self) -> bool {
-        return self.history[0] == self.history[4] && self.history[0] == self.history[8]
+        return self.history[0] == self.history[4] && self.history[0] == self.history[8];
     }
 }
 

@@ -106,8 +106,10 @@ fn main() {
                             max_nodes: None,
                             max_allowed_time_now: None,
                             board_time: {
-                                let w = white_time.map_or(60000, |white_time| white_time.num_milliseconds());
-                                let b = black_time.map_or(60000, |black_time| black_time.num_milliseconds());
+                                let w = white_time
+                                    .map_or(60000, |white_time| white_time.num_milliseconds());
+                                let b = black_time
+                                    .map_or(60000, |black_time| black_time.num_milliseconds());
 
                                 match color {
                                     chess::Color::Black => Some(b as u32),

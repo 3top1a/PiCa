@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 
-const MG_VALUE: [i32; 6] = [ 82, 337, 365, 477, 1025,  0];
-const EG_VALUE: [i32; 6] = [ 94, 281, 297, 512,  936,  0];
+const MG_VALUE: [i32; 6] = [82, 337, 365, 477, 1025, 0];
+const EG_VALUE: [i32; 6] = [94, 281, 297, 512, 936, 0];
 
 /* piece/sq tables */
 /* values from Rofchade: http://www.talkchess.com/forum3/viewtopic.php?f=2&t=68311&start=19 */
@@ -162,8 +162,22 @@ pub const FLIP: [usize; 64] = [
      0,  1,  2,  3,  4,  5,  6,  7,
 ];
 
-const MG_PIECES: [[i32; 64]; 6] = [MG_PAWN_TABLE, MG_KNIGHT_TABLE, MG_BISHOP_TABLE, MG_ROOK_TABLE, MG_QUEEN_TABLE, MG_KING_TABLE];
-const EG_PIECES: [[i32; 64]; 6] = [EG_PAWN_TABLE, EG_KNIGHT_TABLE, EG_BISHOP_TABLE, EG_ROOK_TABLE, EG_QUEEN_TABLE, EG_KING_TABLE];
+const MG_PIECES: [[i32; 64]; 6] = [
+    MG_PAWN_TABLE,
+    MG_KNIGHT_TABLE,
+    MG_BISHOP_TABLE,
+    MG_ROOK_TABLE,
+    MG_QUEEN_TABLE,
+    MG_KING_TABLE,
+];
+const EG_PIECES: [[i32; 64]; 6] = [
+    EG_PAWN_TABLE,
+    EG_KNIGHT_TABLE,
+    EG_BISHOP_TABLE,
+    EG_ROOK_TABLE,
+    EG_QUEEN_TABLE,
+    EG_KING_TABLE,
+];
 
 lazy_static! {
     pub static ref MG: [[i32; 64]; 6] = {
@@ -171,19 +185,20 @@ lazy_static! {
 
         for piece in chess::ALL_PIECES {
             for square in chess::ALL_SQUARES {
-                mg[piece.to_index()][square.to_index()] = MG_PIECES[piece.to_index()][square.to_index()] + MG_VALUE[piece.to_index()];
+                mg[piece.to_index()][square.to_index()] =
+                    MG_PIECES[piece.to_index()][square.to_index()] + MG_VALUE[piece.to_index()];
             }
         }
 
         mg
     };
-
     pub static ref EG: [[i32; 64]; 6] = {
         let mut eg = [[0; 64]; 6];
 
         for piece in chess::ALL_PIECES {
             for square in chess::ALL_SQUARES {
-                eg[piece.to_index()][square.to_index()] = EG_PIECES[piece.to_index()][square.to_index()] + EG_VALUE[piece.to_index()];
+                eg[piece.to_index()][square.to_index()] =
+                    EG_PIECES[piece.to_index()][square.to_index()] + EG_VALUE[piece.to_index()];
             }
         }
 
