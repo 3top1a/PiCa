@@ -23,7 +23,10 @@ fn main() {
     let mut info = true;
 
     let mut board = Board::default();
-    let mut eng = Engine::new(tt_size_mb);
+    let mut eng = Engine {
+        info,
+        ..Default::default()
+    };
     let mut hist = History::new();
 
     for line in io::stdin().lock().lines() {

@@ -1,5 +1,5 @@
-use chess::Color;
 use crate::*;
+use chess::Color;
 
 /// A chess engine arena, where two of the same engine battle it out
 struct Arena {
@@ -49,13 +49,14 @@ fn test_arena() {
 
 macro_rules! nextmoveassert {
     ($fen:expr, $move:expr) => {
-        use chess::ChessMove;
         use crate::tt::TT;
+        use chess::ChessMove;
         let board = Board::from_str($fen).unwrap();
         let mv = Engine {
             tt: TT::new_with_size_mb(256),
             info: true,
-        }.start(board, TimeManager::test_preset(), History::new());
+        }
+        .start(board, TimeManager::test_preset(), History::new());
         let bestmv = ChessMove::from_san(&board, $move).unwrap();
         assert_eq!(
             mv.to_string(),

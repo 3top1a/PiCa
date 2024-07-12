@@ -1,4 +1,4 @@
-use chess::{Board, Color, MoveGen, ALL_SQUARES, EMPTY};
+use chess::{Board, Color, MoveGen, Square, ALL_SQUARES, EMPTY};
 
 use chess::Color::{Black, White};
 use chess::Piece;
@@ -9,6 +9,11 @@ const PIECE_PHASE_VALUES: [i32; 6] = [0, 1, 1, 2, 4, 0];
 
 /// Evaluation function.
 pub fn eval(board: &Board) -> i32 {
+    let who2move = match board.side_to_move() {
+        White => 1,
+        Black => -1,
+    };
+
     let mut mg_sc: i32 = 0; // Midgame score
     let mut eg_sc: i32 = 0; // Endgame score
 
@@ -35,15 +40,25 @@ pub fn eval(board: &Board) -> i32 {
         }
     }
 
+    // King distance
+    /*let white_king_sq = board.king_square(White);
+    let black_king_sq = board.king_square(Black);
+    let a = white_king_sq
+        .get_file()
+        .to_index()
+        .abs_diff(black_king_sq.get_file().to_index()) as i32;
+    let b = white_king_sq
+        .get_rank()
+        .to_index()
+        .abs_diff(black_king_sq.get_rank().to_index()) as i32;
+    let d = a * a + b * b;
+    eg_sc -= d;
+    mg_sc += d;*/
+
     // Tempo bonus I guess
     // From https://www.chessprogramming.org/Tempo:
     // > That bonus is useful mainly in the opening and middle game positions, but can be counterproductive in the endgame.
-    mg_sc += 10;
-
-    let who2move = match board.side_to_move() {
-        White => 1,
-        Black => -1,
-    };
+    mg_sc += 10 * who2move;
 
     // Tapered score
     let game_phase = game_phase.min(24);
