@@ -1,6 +1,8 @@
 In order of importance:
 
-[ ] https://github.com/kz04px/swizzles/tree/master/src/tests/search
+[ ] https://www.chessprogramming.org/Mate_Distance_Pruning
+[ ] https://www.chessprogramming.org/Principal_Variation_Search#PVS_and_NegaScout
+[ ] https://www.chessprogramming.org/Mobility
 [ ] cozy chess
 [ ] mobility
 [ ] king dist eval
@@ -19,3 +21,4 @@ In order of importance:
 Done:
 [x] Qsearch
 [x] Rewrite eval from scratch
+[x] https://github.com/kz04px/swizzles/tree/master/src/tests/search
