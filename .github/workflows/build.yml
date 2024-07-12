@@ -15,7 +15,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --release
+      run: make
+    - name: Test
+      run: make test
 # Tests are off because some of them fail for now
 #    - name: Run tests
 #      run: cargo test --verbose
