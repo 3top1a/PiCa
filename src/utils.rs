@@ -35,7 +35,6 @@ impl SearchInfo {
 
 pub fn log_search_statistics(
     depth: u8,
-    best_mv: Option<ChessMove>,
     best_score: i32,
     start: &Instant,
     sinfo: &SearchInfo,
@@ -45,21 +44,18 @@ pub fn log_search_statistics(
         chess::Color::White => 1,
         chess::Color::Black => -1,
     };*/
-    if let Some(mv) = best_mv {
-        unsafe {
-            let time = Instant::now().duration_since(*start).as_millis();
-            println!(
-                "info score cp {} depth {depth} nodes {NODES_SEARCHED} qnodes {QNODES_SEARCHED} time {time} pv {} {}",
-                best_score,
-                mv,
-                sinfo.print()
-            );
-            println!(
-                "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
-                (NODES_SEARCHED as f32).powf(1. / depth as f32),
-                (1000 * NODES_SEARCHED as u128) / (time + 1)
-            );
-        }
+    unsafe {
+        let time = Instant::now().duration_since(*start).as_millis();
+        println!(
+            "info score cp {} depth {depth} nodes {NODES_SEARCHED} qnodes {QNODES_SEARCHED} time {time} pv {}",
+            best_score,
+            sinfo.print()
+        );
+        println!(
+            "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
+            (NODES_SEARCHED as f32).powf(1. / depth as f32),
+            (1000 * NODES_SEARCHED as u128) / (time + 1)
+        );
     }
 }
 
@@ -189,7 +185,8 @@ mod tests {
         h.push_hist(b.get_hash());
 
         for mvstr in [
-            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3",
+            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3", "Ka6", "Qc2", "Ka5",
+            "Qb3",
         ] {
             assert!(!h.is_three_rep());
 
