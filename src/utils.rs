@@ -159,7 +159,20 @@ impl History {
     }
 
     pub fn is_three_rep(&self) -> bool {
-        return self.history[0] == self.history[4] && self.history[0] == self.history[8];
+        let newest = self.history[self.history.len() - 1];
+        let mut reps = 0;
+
+        reps += if newest == self.history[0] {1} else {0};
+        reps += if newest == self.history[1] {1} else {0};
+        reps += if newest == self.history[2] {1} else {0};
+        reps += if newest == self.history[3] {1} else {0};
+        reps += if newest == self.history[4] {1} else {0};
+        reps += if newest == self.history[5] {1} else {0};
+        reps += if newest == self.history[6] {1} else {0};
+        reps += if newest == self.history[7] {1} else {0};
+        reps += if newest == self.history[8] {1} else {0};
+
+        reps >= 3
     }
 }
 
@@ -176,8 +189,7 @@ mod tests {
         h.push_hist(b.get_hash());
 
         for mvstr in [
-            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3", "Ka6", "Qc2", "Ka5",
-            "Qb3",
+            "Kd6", "Kb6", "Qb3+", "Ka5", "Kd5", "Ka6", "Qc2", "Ka5", "Qb3",
         ] {
             assert!(!h.is_three_rep());
 
