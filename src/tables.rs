@@ -1,3 +1,4 @@
+use chess::{BitBoard, File, Rank, Square};
 use lazy_static::lazy_static;
 
 const MG_VALUE: [i32; 6] = [82, 337, 365, 477, 1025, 0];
@@ -204,4 +205,86 @@ lazy_static! {
 
         eg
     };
+
+    pub static ref PASSED_PAWN_MASKS: [[BitBoard; 64]; 2] = {
+        let mut white_masks = [BitBoard::new(0); 64];
+        let mut black_masks = [BitBoard::new(0); 64];
+
+        for square in chess::ALL_SQUARES {
+            let file = square.get_file();
+            let rank = square.get_rank();
+
+            // White passed pawn mask
+            let mut white_mask = BitBoard::new(0);
+            for r in rank.to_index() + 1..8 {
+                if file > File::A {
+                    white_mask |= BitBoard::from_square(Square::make_square(Rank::from_index(r), File::from_index(file.to_index() - 1)));
+                }
+                white_mask |= BitBoard::from_square(Square::make_square(Rank::from_index(r), file));
+                if file < File::H {
+                    white_mask |= BitBoard::from_square(Square::make_square(Rank::from_index(r), File::from_index(file.to_index() + 1)));
+                }
+            }
+            white_masks[square.to_index()] = white_mask;
+
+            // Black passed pawn mask
+            let mut black_mask = BitBoard::new(0);
+            for r in (0..rank.to_index()).rev() {
+                if file > File::A {
+                    black_mask |= BitBoard::from_square(Square::make_square(Rank::from_index(r), File::from_index(file.to_index() - 1)));
+                }
+                black_mask |= BitBoard::from_square(Square::make_square(Rank::from_index(r), file));
+                if file < File::H {
+                    black_mask |= BitBoard::from_square(Square::make_square(Rank::from_index(r), File::from_index(file.to_index() + 1)));
+                }
+            }
+            black_masks[square.to_index()] = black_mask;
+        }
+
+        [white_masks, black_masks]
+    };
+
+    pub static ref ISOLATED_PAWN_MASKS: [BitBoard; 8] = {
+        let mut masks = [BitBoard::new(0); 8];
+
+        for file in chess::ALL_FILES {
+            let mut mask = BitBoard::new(0);
+
+            if file > File::A {
+                for rank in chess::ALL_RANKS {
+                    mask |= BitBoard::set(rank, File::from_index(file.to_index() - 1));
+                }
+            }
+            if file < File::H {
+                for rank in chess::ALL_RANKS {
+                    mask |= BitBoard::set(rank, File::from_index(file.to_index() + 1));
+                }
+            }
+
+            masks[file.to_index()] = mask;
+        }
+
+        masks
+    };
+}
+
+mod tests {
+    use chess::Square;
+
+    use super::PASSED_PAWN_MASKS;
+
+    #[test]
+    fn test_passed_pawn_mask() {
+        let white_pawn_square = Square::E4;
+        let black_pawn_square = Square::D5;
+        let white_overflow_test = Square::H5;
+
+        let white_passed_mask = PASSED_PAWN_MASKS[0][white_pawn_square.to_index()];
+        let black_passed_mask = PASSED_PAWN_MASKS[1][black_pawn_square.to_index()];
+        let white_overflow_mask = PASSED_PAWN_MASKS[0][white_overflow_test.to_index()];
+
+        assert_eq!(white_passed_mask, chess::BitBoard(4051049677989085184));
+        assert_eq!(black_passed_mask, chess::BitBoard(471604252));
+        assert_eq!(white_overflow_mask, chess::BitBoard(13889312357043142656));
+    }
 }
