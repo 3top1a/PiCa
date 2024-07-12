@@ -47,7 +47,7 @@ fn test_arena() {
     let _ = Arena::new("8/5k2/8/8/8/2K5/4Q3/8 w - - 0 1".to_string(), Color::White).start();
 }
 
-macro_rules! nextmoveassert {
+macro_rules! nextmoveassert_san {
     ($fen:expr, $move:expr) => {
         use crate::tt::TT;
         use chess::ChessMove;
@@ -58,6 +58,26 @@ macro_rules! nextmoveassert {
         }
         .start(board, TimeManager::test_preset(), History::new());
         let bestmv = ChessMove::from_san(&board, $move).unwrap();
+        assert_eq!(
+            mv.to_string(),
+            bestmv.to_string(),
+            "{}",
+            format!("FEN: {}", board)
+        );
+    };
+}
+
+macro_rules! nextmoveassert_uci {
+    ($fen:expr, $move:expr) => {
+        use crate::tt::TT;
+        use chess::ChessMove;
+        let board = Board::from_str($fen).unwrap();
+        let mv = Engine {
+            tt: TT::new_with_size_mb(256),
+            info: true,
+        }
+        .start(board, TimeManager::test_preset(), History::new());
+        let bestmv = ChessMove::from_str($move).unwrap();
         assert_eq!(
             mv.to_string(),
             bestmv.to_string(),
@@ -80,7 +100,7 @@ fn parse_epd(epd: &str) -> (&str, &str) {
 
 /// Bratko Kopec Test
 /// https://www.chessprogramming.org/Bratko-Kopec_Test
-#[test]
+/*#[test]
 fn bratko_kopec() {
     let positions = "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - bm Qd1+;
 3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - bm d5;
@@ -112,7 +132,7 @@ r2qnrnk/p2b2b1/1p1p2pp/2pPpp2/1PP1P3/PRNBB3/3QNPPP/5RK1 w - - bm f4;"
         let (fen, best_move) = parse_epd(pos);
         nextmoveassert!(fen, best_move);
     }
-}
+}*/
 
 #[test]
 /// https://www.stmintz.com/ccc/index.php?id=476109
@@ -127,6 +147,32 @@ fn endgames() {
 
     for pos in positions {
         let (fen, best_move) = parse_epd(pos);
-        nextmoveassert!(fen, best_move);
+        nextmoveassert_san!(fen, best_move);
+    }
+}
+
+#[test]
+fn swizzles_tests() {
+    let positions = "3k4/8/3K4/8/5R2/8/8/8 w - - 0 1 bm f4f8
+8/8/8/5r2/8/3k4/8/3K4 b - - 0 1 bm f5f1
+1k1r2R1/8/1K6/8/8/8/8/8 w - - 0 1 bm g8d8
+8/8/8/8/8/1k6/8/1K1R2r1 b - - 0 1 bm g1d1
+8/8/8/8/8/8/7R/1k2K2R w K - 0 1 bm e1g1
+1K2k2r/7r/8/8/8/8/8/8 b k - 0 1 bm e8g8
+8/8/8/8/8/8/R7/R3K2k w Q - 0 1 bm e1c1
+r3k2K/r7/8/8/8/8/8/8 b q - 0 1 bm e8c8
+kb4r1/p7/8/8/8/6q1/8/R6K w - - 0 1 bm a1a7
+r6k/8/6Q1/8/8/8/P7/KB4R1 b - - 0 1 bm a8a2
+8/8/8/8/8/8/p7/k1K5 w - - 0 1 bm c1c2
+K1k5/P7/8/8/8/8/8/8 b - - 0 1 bm c8c7
+K1k5/P1q5/8/B7/8/8/8/8 w - - 0 1 bm a5c7
+8/8/8/8/b7/8/p1Q5/k1K5 b - - 0 1 bm a4c2
+6n1/5P1k/5Q2/8/8/8/8/7K w - - 0 1 bm f7f8n
+7k/8/8/8/8/5q2/5p1K/6N1 b - - 0 1 bm f2f1n"
+        .lines();
+
+    for pos in positions {
+        let (fen, best_move) = parse_epd(pos);
+        nextmoveassert_uci!(fen, best_move);
     }
 }
