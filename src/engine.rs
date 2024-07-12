@@ -50,11 +50,6 @@ impl Engine {
 
         let mut sinfo = SearchInfo::new();
 
-        if history.is_three_rep() {
-            println!("debug In a three repetition position, no moves possible");
-            panic!();
-        }
-
         // keep track of the number of nodes last ply, if it doesn't change with another iteration we are screwed anyways
         let mut nodes_last_ply = 0;
         for depth in 1..MAX_PLY {

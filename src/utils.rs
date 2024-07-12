@@ -172,7 +172,7 @@ impl History {
         reps += if newest == self.history[7] {1} else {0};
         reps += if newest == self.history[8] {1} else {0};
 
-        reps >= 3
+        reps >= 2
     }
 }
 
