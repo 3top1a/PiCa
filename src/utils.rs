@@ -158,15 +158,15 @@ impl History {
         let newest = self.history[self.history.len() - 1];
         let mut reps = 0;
 
-        reps += if newest == self.history[0] {1} else {0};
-        reps += if newest == self.history[1] {1} else {0};
-        reps += if newest == self.history[2] {1} else {0};
-        reps += if newest == self.history[3] {1} else {0};
-        reps += if newest == self.history[4] {1} else {0};
-        reps += if newest == self.history[5] {1} else {0};
-        reps += if newest == self.history[6] {1} else {0};
-        reps += if newest == self.history[7] {1} else {0};
-        reps += if newest == self.history[8] {1} else {0};
+        reps += if newest == self.history[0] { 1 } else { 0 };
+        reps += if newest == self.history[1] { 1 } else { 0 };
+        reps += if newest == self.history[2] { 1 } else { 0 };
+        reps += if newest == self.history[3] { 1 } else { 0 };
+        reps += if newest == self.history[4] { 1 } else { 0 };
+        reps += if newest == self.history[5] { 1 } else { 0 };
+        reps += if newest == self.history[6] { 1 } else { 0 };
+        reps += if newest == self.history[7] { 1 } else { 0 };
+        reps += if newest == self.history[8] { 1 } else { 0 };
 
         reps >= 3
     }

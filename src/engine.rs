@@ -93,13 +93,7 @@ impl Engine {
             }
 
             if self.info {
-                log_search_statistics(
-                    depth,
-                    best_score,
-                    &start_of_search_instant,
-                    &sinfo,
-                    &board,
-                );
+                log_search_statistics(depth, best_score, &start_of_search_instant, &sinfo, &board);
             }
 
             if nodes_last_ply == unsafe { NODES_SEARCHED } && depth > 12 {
