@@ -10,24 +10,57 @@ mod utils;
 use std::io;
 use std::io::BufRead;
 use std::str::FromStr;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::sync::mpsc;
+use std::thread;
 
 use chess::Board;
 use engine::Engine;
 use time::TimeManager;
+use tt::TT;
 use utils::History;
 use vampirc_uci::parse_one;
 use vampirc_uci::UciMessage;
 
+enum EngineCommand {
+    Start(Board, TimeManager, History, Arc<AtomicBool>),
+    Quit,
+}
+
 fn main() {
     let mut tt_size_mb = 256;
     let mut info = true;
+    let stop_flag = Arc::new(AtomicBool::new(false));
 
     let mut board = Board::default();
-    let mut eng = Engine {
-        info,
-        ..Default::default()
-    };
     let mut hist = History::new();
+
+    // Create a channel for communicating with the engine thread
+    let (tx, rx) = mpsc::channel();
+
+    // Spawn the engine in its own thread
+    thread::spawn(move || {
+        let mut eng = Engine {
+            info,
+            tt: TT::new_with_size_mb(tt_size_mb),
+            ..Default::default()
+        };
+
+        for cmd in rx {
+            match cmd {
+                EngineCommand::Start(board, tc, hist, stop_flag) => {
+                    let mv = eng.start(board, tc, hist, &stop_flag);
+                    match mv {
+                        Some(x) => println!("bestmove {x}"),
+                        None => eprintln!("No move could be found!"),
+                    };
+                }
+                EngineCommand::Quit => break,
+            }
+        }
+    });
 
     for line in io::stdin().lock().lines() {
         let msg: UciMessage = parse_one(&line.expect("Parse UCI message"));
@@ -47,9 +80,8 @@ fn main() {
             }
             UciMessage::UciNewGame => {
                 board = Board::default();
-                eng = Engine::new(tt_size_mb);
-                eng.info = info;
                 hist = History::new();
+                // We don't reset the engine here, as it's in a separate thread
             }
             UciMessage::SetOption { name, value } => {
                 if let Some(value) = value {
@@ -59,13 +91,9 @@ fn main() {
                         _ => eprintln!("> Invalid name!"),
                     }
                 } else {
-                    eprintln!("> No value recieved!")
+                    eprintln!("> No value received!")
                 }
-
-                // Reset engine
-                eng = Engine::new(tt_size_mb);
-                eng.info = info;
-                hist = History::new();
+                // We can't reset the engine here, as it's in a separate thread
             }
             UciMessage::Position {
                 startpos,
@@ -91,6 +119,7 @@ fn main() {
                 search_control: _,
             } => {
                 let color = board.side_to_move();
+                stop_flag.store(false, Ordering::Relaxed);
 
                 let tc = if let Some(tc) = tc {
                     match tc {
@@ -136,11 +165,15 @@ fn main() {
                     }
                 };
 
-                let mv = eng.start(board, tc, hist);
-                println!("bestmove {mv}");
+                let stop_flag_clone = Arc::clone(&stop_flag);
+                tx.send(EngineCommand::Start(board, tc, hist.clone(), stop_flag_clone)).expect("Send command to engine");
             }
             UciMessage::Quit => {
+                tx.send(EngineCommand::Quit).expect("Send quit command to engine");
                 return;
+            }
+            UciMessage::Stop => {
+                stop_flag.store(true, Ordering::Relaxed);
             }
             UciMessage::Unknown(str, _) => {
                 eprintln!("> Could not parse message `{str}`!");

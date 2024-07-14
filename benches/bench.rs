@@ -1,3 +1,5 @@
+use std::sync::{atomic::AtomicBool, Arc};
+
 use chess::Board;
 use criterion::{criterion_group, criterion_main, Criterion};
 use pica::{engine::Engine, eval::eval, time::TimeManager, utils::History};
@@ -6,7 +8,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("eval", |b| b.iter(|| eval(&Board::default())));
     c.bench_function("search d5", |b| {
         b.iter(|| {
-            let mut e = Engine::new(64);
+            let mut e = Engine {
+                ..Default::default()
+            };
             e.start(
                 Board::default(),
                 TimeManager {
@@ -16,6 +20,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                     max_allowed_time_now: None,
                 },
                 History::new(),
+                &Arc::new(AtomicBool::new(false)),
             );
         })
     });

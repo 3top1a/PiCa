@@ -1,6 +1,12 @@
-use std::time::Instant;
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Instant,
+};
 
-use chess::{Board, ChessMove, MoveGen};
+use chess::{Board, BoardStatus, ChessMove, MoveGen};
 
 use crate::{
     bump,
@@ -30,17 +36,17 @@ impl Default for Engine {
 }
 
 impl Engine {
-    pub fn new(tt_size_mb: usize) -> Self {
-        Self {
-            tt: TT::new_with_size_mb(tt_size_mb),
-            info: false,
-        }
-    }
-
     /// Start a new search
-    pub fn start(&mut self, board: Board, time: TimeManager, history: History) -> ChessMove {
+    pub fn start(
+        &mut self,
+        board: Board,
+        time: TimeManager,
+        history: History,
+        stop_flag: &Arc<AtomicBool>,
+    ) -> Option<ChessMove> {
         stats::reset();
         let start_of_search_instant = Instant::now();
+        stop_flag.store(false, Ordering::SeqCst);
 
         let mut alpha = -OO;
         let beta = OO;
@@ -52,13 +58,14 @@ impl Engine {
 
         // keep track of the number of nodes last ply, if it doesn't change with another iteration we are screwed anyways
         let mut nodes_last_ply = 0;
-        for depth in 1..MAX_PLY {
+        'depth_loop: for depth in 1..MAX_PLY {
             if !time.can_continue(
                 depth,
                 board,
                 unsafe { NODES_SEARCHED },
                 start_of_search_instant,
-            ) {
+            ) || stop_flag.load(Ordering::SeqCst)
+            {
                 break;
             }
 
@@ -76,7 +83,22 @@ impl Engine {
                 let nb = board.make_move_new(mv);
                 sinfo.pv[0] = Some(mv);
                 let new_history = history.push_hist_new(board.get_hash());
-                let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo, new_history);
+                let score = -self.negamax(
+                    &nb,
+                    -beta,
+                    -alpha,
+                    depth,
+                    1,
+                    &mut sinfo,
+                    new_history,
+                    stop_flag,
+                    &time,
+                    &start_of_search_instant,
+                );
+
+                if stop_flag.load(Ordering::SeqCst) {
+                    break 'depth_loop;
+                }
 
                 if score > best_score {
                     best_score = score;
@@ -105,7 +127,7 @@ impl Engine {
             nodes_last_ply = unsafe { NODES_SEARCHED };
         }
 
-        best_mv.expect("unable to find best move")
+        best_mv
     }
 
     /// Starts a recursive negamax loop
@@ -120,7 +142,21 @@ impl Engine {
         ply: u8,
         sinfo: &mut SearchInfo,
         history: History,
+        stop_flag: &Arc<AtomicBool>,
+        time: &TimeManager,
+        start_of_search: &Instant,
     ) -> i32 {
+        // Check if stop command has been received
+        if unsafe { NODES_SEARCHED } % 50000 == 0 {
+            if stop_flag.load(Ordering::SeqCst) {
+                return -5000000;
+            }
+            if !time.can_continue(depth, *board, unsafe { NODES_SEARCHED }, *start_of_search) {
+                stop_flag.store(true, Ordering::SeqCst);
+                return -5000000;
+            }
+        }
+
         bump!(NODES_SEARCHED);
 
         match board.status() {
@@ -149,6 +185,14 @@ impl Engine {
         bump!(TT_CHECK);
         if entry.is_valid(key) && entry.depth >= depth {
             bump!(TT_HIT);
+            if entry.value.abs() > OO - MAX_PLY as i32 {
+                // If it's a mate score
+                if entry.value > 0 {
+                    return entry.value - ply as i32;
+                } else {
+                    return entry.value + ply as i32;
+                }
+            }
             match entry.node_type {
                 NodeType::Exact => return entry.value,
                 NodeType::LowerBound => {
@@ -199,6 +243,9 @@ impl Engine {
                 ply + 1,
                 sinfo,
                 new_history,
+                stop_flag,
+                time,
+                start_of_search,
             );
 
             if score >= beta {
@@ -252,7 +299,7 @@ impl Engine {
         &self,
         board: &Board,
         mut alpha: i32,
-        beta: i32,
+        mut beta: i32,
         sinfo: &SearchInfo,
         ply: u8,
     ) -> i32 {

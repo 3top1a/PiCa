@@ -12,7 +12,9 @@ impl Arena {
     pub fn new(fen: String, winningside: Color) -> Self {
         Self {
             board: Board::from_str(&fen).unwrap(),
-            eng: Engine::new(128),
+            eng: Engine {
+                ..Default::default()
+            },
             winningside,
         }
     }
@@ -33,7 +35,13 @@ impl Arena {
 
             let mv = self
                 .eng
-                .start(self.board, TimeManager::test_preset(), History::new());
+                .start(
+                    self.board,
+                    TimeManager::test_preset(),
+                    History::new(),
+                    &Arc::new(AtomicBool::new(false)),
+                )
+                .unwrap();
             println!("{} {}", mv, self.board);
             self.board = self.board.make_move_new(mv);
         }
@@ -56,7 +64,13 @@ macro_rules! nextmoveassert_san {
             tt: TT::new_with_size_mb(256),
             info: true,
         }
-        .start(board, TimeManager::test_preset(), History::new());
+        .start(
+            board,
+            TimeManager::test_preset(),
+            History::new(),
+            &Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
         let bestmv = ChessMove::from_san(&board, $move).unwrap();
         assert_eq!(
             mv.to_string(),
@@ -76,7 +90,13 @@ macro_rules! nextmoveassert_uci {
             tt: TT::new_with_size_mb(256),
             info: true,
         }
-        .start(board, TimeManager::test_preset(), History::new());
+        .start(
+            board,
+            TimeManager::test_preset(),
+            History::new(),
+            &Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
         let bestmv = ChessMove::from_str($move).unwrap();
         assert_eq!(
             mv.to_string(),

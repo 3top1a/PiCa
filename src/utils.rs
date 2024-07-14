@@ -7,7 +7,7 @@ use crate::{
     stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct SearchInfo {
     pub pv: [Option<ChessMove>; MAX_PLY as usize + 1],
     pub killers: [[Option<ChessMove>; MAX_PLY as usize + 1]; 2],
