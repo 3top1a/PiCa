@@ -2,6 +2,7 @@ use std::{collections::HashSet, str::FromStr, time::Instant};
 
 use arrayvec::ArrayVec;
 use cozy_chess::{Board, Move, Piece, Square};
+use cozy_chess::Color;
 
 use crate::{
     engine::MAX_PLY,
@@ -53,7 +54,7 @@ pub fn log_search_statistics(
             sinfo.print()
         );
         println!(
-            "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
+            "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0} QS {QNODES_SEARCHED}",
             (NODES_SEARCHED as f32).powf(1. / depth as f32),
             (1000 * NODES_SEARCHED as u128) / (time + 1)
         );
@@ -79,10 +80,19 @@ fn piece_to_index(a: Option<Piece>) -> usize {
 const KILLER_VALUE: u32 = 20;
 const PV_VALUE: u32 = 50;
 
-fn score_move(mv: Move, b: &Board, sinfo: &SearchInfo, ply: u8) -> u32 {
+fn score_move(mv: Move, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<Move>) -> u32 {
     // Check if the move is in the PV
     if sinfo.pv[ply as usize] == Some(mv) {
         return PV_VALUE;
+    }
+
+    match hash {
+        Some(x) => {
+            if x == mv {
+                return PV_VALUE + 1u32;
+            }
+        },
+        None => {},
     }
 
     let attacker = piece_to_index(b.piece_on(mv.from));
@@ -108,6 +118,20 @@ fn score_move(mv: Move, b: &Board, sinfo: &SearchInfo, ply: u8) -> u32 {
     // sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()]
 
     mvv_lva
+}
+
+pub fn sort_moves(
+    a: Move,
+    b: Move,
+    board: &Board,
+    sinfo: &SearchInfo,
+    ply: u8,
+    hash: Option<Move>
+) -> core::cmp::Ordering {
+    let a = score_move(a, board, sinfo, ply, hash);
+    let b = score_move(b, board, sinfo, ply, hash);
+
+    b.cmp(&a)
 }
 
 const MAX_MOVES: usize = 128;
@@ -146,17 +170,52 @@ impl MoveGen {
     }
 }
 
-pub fn sort_moves(
-    a: Move,
-    b: Move,
-    board: &Board,
-    sinfo: &SearchInfo,
-    ply: u8,
-) -> core::cmp::Ordering {
-    let a = score_move(a, board, sinfo, ply);
-    let b = score_move(b, board, sinfo, ply);
+pub fn uncozy_move(board: &Board, mut mv: Move) -> Move {
+    // Handle UCI -> FRC castling notation
+    if let Some(piece) = board.piece_on(mv.from) {
+        if piece == Piece::King {
+            let castle_white = board.castle_rights(Color::White);
+            let castle_black = board.castle_rights(Color::Black);
 
-    b.cmp(&a)
+            // White king side
+            if mv.from == Square::E1 && mv.to == Square::G1 && castle_white.short.is_some() {
+                mv = Move {
+                    from: Square::E1,
+                    to: Square::H1,
+                    promotion: None,
+                }
+            }
+
+            // White queen side
+            if mv.from == Square::E1 && mv.to == Square::C1 && castle_white.long.is_some() {
+                mv = Move {
+                    from: Square::E1,
+                    to: Square::A1,
+                    promotion: None,
+                }
+            }
+
+            // Black king
+            if mv.from == Square::E8 && mv.to == Square::G8 && castle_black.short.is_some() {
+                mv = Move {
+                    from: Square::E8,
+                    to: Square::H8,
+                    promotion: None,
+                }
+            }
+
+            // Black queen
+            if mv.from == Square::E8 && mv.to == Square::C8 && castle_black.long.is_some() {
+                mv = Move {
+                    from: Square::E8,
+                    to: Square::A8,
+                    promotion: None,
+                }
+            }
+        }
+    }
+
+    return mv
 }
 
 /// Persistent data between games

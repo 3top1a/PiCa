@@ -68,7 +68,7 @@ impl Engine {
             // TODO implement better sorting algo
             movegen
                 .moves
-                .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
+                .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0, None));
 
             for mv in movegen.moves {
                 if history.is_three_rep() {
@@ -128,7 +128,7 @@ impl Engine {
         
         match board.status() {
             cozy_chess::GameStatus::Ongoing => {}
-            cozy_chess::GameStatus::Won => return OO + ply as i32,
+            cozy_chess::GameStatus::Won => return -OO + ply as i32,
             cozy_chess::GameStatus::Drawn => return 0,
         }
 
@@ -180,15 +180,7 @@ impl Engine {
         // TODO implement better sorting algo
         movegen
             .moves
-            .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
-
-        // Move the TT move to first position
-        // TODO this is shit
-        /*if let Some(tt_move) = entry.best_move {
-            if let Some(index) = sorted_mv.iter().position(|&m| m == tt_move) {
-                sorted_mv.swap(0, index);
-            }
-        }*/
+            .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0, entry.best_move));
 
         let mut best_move = None;
         for mv in movegen.moves {
@@ -264,8 +256,6 @@ impl Engine {
     ) -> i32 {
         bump!(QNODES_SEARCHED);
 
-        let mut movegen = MoveGen::new(board);
-
         let standpat = eval(board);
 
         // Check if standpat causes a beta cutoff
@@ -292,10 +282,11 @@ impl Engine {
 
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
-
+        
+        let mut movegen = MoveGen::new(board);
         movegen
             .captures
-            .sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
+            .sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply, None));
 
         for mv in movegen.captures {
             let capture = board.piece_on(mv.to).is_some();

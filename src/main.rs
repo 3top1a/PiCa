@@ -22,7 +22,7 @@ use engine::Engine;
 use remark::UciRemark;
 use time::TimeManager;
 use tt::TT;
-use utils::History;
+use utils::{uncozy_move, History};
 
 fn main() {
     // Incrementaly updated engine settings
@@ -88,6 +88,7 @@ fn main() {
 
                 println!("uciok");
             }
+            UciCommand::IsReady => println!("readyok"),
             UciCommand::UciNewGame => reset!(),
             UciCommand::Quit => exit(0),
             UciCommand::SetOption { name, value } => {
@@ -110,7 +111,7 @@ fn main() {
                     command::UciInitPos::StartPos => board = Board::startpos(),
                 }
                 for mv in moves {
-                    board.play(mv);
+                    board.play(uncozy_move(&board, mv));
                     hist.push_hist(board.hash());
                 }
             }
@@ -118,7 +119,7 @@ fn main() {
                 let mv = eng.start(board.clone(), TimeManager::from_uci(params, &board), hist);
                 println!("bestmove {mv}");
             }
-            _ => todo!(),
+            _ => eprintln!("{:?}", line),
         }
     }
 }
