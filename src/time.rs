@@ -1,10 +1,13 @@
 use std::time::Instant;
 
-use chess::Board;
+use cozy_chess::Board;
+use cozy_chess::Color;
+use cozy_uci::command::UciGoParams;
 
 use crate::engine::MAX_PLY;
 
 #[derive(Debug)]
+// TODO: Convert u32/u64 to Duration
 pub struct TimeManager {
     pub max_depth: Option<u8>,
     pub max_nodes: Option<u64>,
@@ -47,6 +50,22 @@ impl TimeManager {
         }
 
         true
+    }
+
+    pub fn from_uci(params: UciGoParams, board: &Board) -> Self {
+        let color = board.side_to_move();
+
+        let board_time = match color {
+            Color::White => params.wtime,
+            Color::Black => params.btime,
+        };
+
+        Self {
+            max_nodes: params.nodes,
+            max_depth: params.depth.map(|d| d as u8),
+            max_allowed_time_now: params.movetime.map(|d| d.as_millis() as u32),
+            board_time: board_time.map(|x| x.as_millis() as u32),
+        }
     }
 
     pub fn test_preset() -> Self {

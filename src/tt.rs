@@ -1,4 +1,5 @@
-use chess::{CacheTable, ChessMove};
+use crate::cache_table::CacheTable;
+use cozy_chess::Move;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Debug)]
 pub enum NodeType {
@@ -9,7 +10,7 @@ pub enum NodeType {
     Default,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 /// Transposition table entry
 /// TODO: Compressed TT entry in 128 bits - 64 for key, 64 for data. Might have to cut the move and reimplement TT move ordering
 pub struct TranspositionEntry {
@@ -17,7 +18,7 @@ pub struct TranspositionEntry {
     pub depth: u8,
     pub node_type: NodeType,
     pub value: i32,
-    pub best_move: Option<ChessMove>,
+    pub best_move: Option<Move>,
 }
 
 impl Default for TranspositionEntry {

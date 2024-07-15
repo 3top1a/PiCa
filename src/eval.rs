@@ -1,7 +1,7 @@
-use chess::{BitBoard, Board, Color, MoveGen, Square, ALL_SQUARES, EMPTY};
+use cozy_chess::{BitBoard, Board, Color};
 
-use chess::Color::{Black, White};
-use chess::Piece;
+use cozy_chess::Color::{Black, White};
+use cozy_chess::Piece;
 
 use crate::tables::{EG, ISOLATED_PAWN_MASKS, MG, PASSED_PAWN_MASKS};
 
@@ -19,48 +19,46 @@ pub fn eval(board: &Board) -> i32 {
     let mut mg_sc: i32 = 0; // Midgame score
     let mut eg_sc: i32 = 0; // Endgame score
 
-    debug_assert!(board.is_sane());
-
     // Calculate the game phase
     let mut game_phase = 0;
 
     // Get Pesto values
-    for square in *board.combined() {
+    for square in board.occupied() {
         if let Some(piece) = board.piece_on(square) {
             let color = unsafe { board.color_on(square).unwrap_unchecked() };
 
-            game_phase += PIECE_PHASE_VALUES[piece.to_index()];
-            let sq_i = square.to_index();
+            game_phase += PIECE_PHASE_VALUES[piece as usize];
+            let sq_i = square as usize;
 
             if color == Color::White {
-                mg_sc += MG[piece.to_index()][sq_i];
-                eg_sc += EG[piece.to_index()][sq_i];
+                mg_sc += MG[piece as usize][sq_i];
+                eg_sc += EG[piece as usize][sq_i];
             } else {
-                mg_sc -= MG[piece.to_index()][sq_i ^ 56];
-                eg_sc -= EG[piece.to_index()][sq_i ^ 56];
+                mg_sc -= MG[piece as usize][sq_i ^ 56];
+                eg_sc -= EG[piece as usize][sq_i ^ 56];
             }
         }
     }
 
     // TODO cache table
-    for square in *board.pieces(Piece::Pawn) {
+    for square in board.pieces(Piece::Pawn) {
         let color = board.color_on(square).unwrap();
         let color_mul = (color == White) as i32 * 2 - 1;
-        let file = square.get_file().to_index();
-        let rank = square.get_rank().to_index();
+        let file = square.file() as usize;
+        let rank = square.rank() as usize;
 
         let passed_mask = match color {
-            White => PASSED_PAWN_MASKS[0][square.to_index()],
-            Black => PASSED_PAWN_MASKS[1][square.to_index()],
+            White => PASSED_PAWN_MASKS[0][square as usize],
+            Black => PASSED_PAWN_MASKS[1][square as usize],
         };
 
         let front_mask = match color {
-            White => chess::BitBoard::new(0x101010101010101 << square.to_index()),
-            Black => chess::BitBoard::new(0x101010101010101 >> (63 - square.to_index())),
-        } ^ BitBoard::from_square(square);
+            White => BitBoard(0x101010101010101 << square as usize),
+            Black => BitBoard(0x101010101010101 >> (63 - square as usize)),
+        } ^ BitBoard::from(square);
 
-        if (board.color_combined(!color) & passed_mask == EMPTY)
-            && (board.color_combined(color) & front_mask == EMPTY)
+        if (board.colors(!color) & passed_mask == BitBoard::EMPTY)
+            && (board.colors(color) & front_mask == BitBoard::EMPTY)
         {
             let bonus = if color == White {
                 PASSED_PAWN_BONUS[rank]
@@ -73,8 +71,8 @@ pub fn eval(board: &Board) -> i32 {
 
         // Isolated pawn evaluation
         let isolated_mask = ISOLATED_PAWN_MASKS[file];
-        let friendly_pawns = board.pieces(Piece::Pawn) & board.color_combined(color);
-        if friendly_pawns & isolated_mask == EMPTY {
+        let friendly_pawns = board.pieces(Piece::Pawn) & board.colors(color);
+        if friendly_pawns & isolated_mask == BitBoard::EMPTY {
             mg_sc += color_mul * ISOLATED_PAWN_PENALTY;
             eg_sc += color_mul * ISOLATED_PAWN_PENALTY / 2; // Less penalty in endgame
         }
@@ -117,33 +115,33 @@ fn sanity_check() {
     assert!(eval(&Board::from_str("k7/ppp5/8/8/8/8/5Q2/4QKQ1 w - - 0 1").unwrap()) > 2000);
 
     // Test for passed pawn scores
-    println!(
-        "{} - {}",
+    assert_eq!(
+        // "{} - {}",
         eval(&Board::from_str("6k1/8/8/8/8/P7/8/6K1 w - - 0 1").unwrap()),
         198
     );
-    println!(
-        "{} - {}",
+    assert_eq!(
+        // "{} - {}",
         eval(&Board::from_str("6k1/8/8/8/P7/8/8/6K1 w - - 0 1").unwrap()),
         176
     );
-    println!(
-        "{} - {}",
+    assert_eq!(
+        // "{} - {}",
         eval(&Board::from_str("6k1/8/8/P7/8/8/8/6K1 w - - 0 1").unwrap()),
         187
     );
-    println!(
-        "{} - {}",
+    assert_eq!(
+        // "{} - {}",
         eval(&Board::from_str("6k1/8/P7/8/8/8/8/6K1 w - - 0 1").unwrap()),
         228
     );
-    println!(
-        "{} - {}",
+    assert_eq!(
+        // "{} - {}",
         eval(&Board::from_str("6k1/P7/8/8/8/8/8/6K1 w - - 0 1").unwrap()),
         337
     );
-    println!(
-        "{} - {}",
+    assert_eq!(
+        // "{} - {}",
         eval(&Board::from_str("Q7/6k1/8/8/8/8/8/6K1 w - - 0 1").unwrap()),
         915
     );

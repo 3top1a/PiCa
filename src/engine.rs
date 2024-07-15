@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use chess::{Board, ChessMove, MoveGen};
+use cozy_chess::{Board, Move};
 
 use crate::{
     bump,
@@ -8,7 +8,7 @@ use crate::{
     stats::{self, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
-    utils::{log_search_statistics, sort_moves, History, SearchInfo},
+    utils::{log_search_statistics, sort_moves, History, MoveGen, SearchInfo},
 };
 
 pub const OO: i32 = 10000;
@@ -38,7 +38,7 @@ impl Engine {
     }
 
     /// Start a new search
-    pub fn start(&mut self, board: Board, time: TimeManager, history: History) -> ChessMove {
+    pub fn start(&mut self, board: Board, time: TimeManager, history: History) -> Move {
         stats::reset();
         let start_of_search_instant = Instant::now();
 
@@ -55,7 +55,7 @@ impl Engine {
         for depth in 1..MAX_PLY {
             if !time.can_continue(
                 depth,
-                board,
+                board.clone(),
                 unsafe { NODES_SEARCHED },
                 start_of_search_instant,
             ) {
@@ -64,18 +64,21 @@ impl Engine {
 
             stats::reset();
 
-            let movegen = MoveGen::new_legal(&board);
-            let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
+            let mut movegen = MoveGen::new(&board);
+            // TODO implement better sorting algo
+            movegen
+                .moves
+                .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
 
-            for mv in sorted_mv {
+            for mv in movegen.moves {
                 if history.is_three_rep() {
                     break;
                 }
 
-                let nb = board.make_move_new(mv);
+                let mut nb = board.clone();
+                nb.play(mv);
                 sinfo.pv[0] = Some(mv);
-                let new_history = history.push_hist_new(board.get_hash());
+                let new_history = history.push_hist_new(board.hash());
                 let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo, new_history);
 
                 if score > best_score {
@@ -122,11 +125,11 @@ impl Engine {
         history: History,
     ) -> i32 {
         bump!(NODES_SEARCHED);
-
+        
         match board.status() {
-            chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => return -OO + ply as i32,
-            chess::BoardStatus::Stalemate => return 0,
+            cozy_chess::GameStatus::Ongoing => {}
+            cozy_chess::GameStatus::Won => return OO + ply as i32,
+            cozy_chess::GameStatus::Drawn => return 0,
         }
 
         if history.is_three_rep() {
@@ -143,7 +146,7 @@ impl Engine {
         }
 
         // Check TT
-        let key = board.get_hash();
+        let key = board.hash();
         let original_alpha = alpha;
         let entry = self.tt.get(key);
         bump!(TT_CHECK);
@@ -173,24 +176,28 @@ impl Engine {
             depth += 1
         };
 
-        let movegen = MoveGen::new_legal(board);
-        let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
+        let mut movegen = MoveGen::new(&board);
+        // TODO implement better sorting algo
+        movegen
+            .moves
+            .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
+
         // Move the TT move to first position
         // TODO this is shit
-        if let Some(tt_move) = entry.best_move {
+        /*if let Some(tt_move) = entry.best_move {
             if let Some(index) = sorted_mv.iter().position(|&m| m == tt_move) {
                 sorted_mv.swap(0, index);
             }
-        }
+        }*/
 
         let mut best_move = None;
-        for mv in sorted_mv {
-            let capture = board.piece_on(mv.get_dest()).is_some();
+        for mv in movegen.moves {
+            let capture = board.piece_on(mv.to).is_some();
             sinfo.pv[ply as usize] = Some(mv);
 
-            let new_board = board.make_move_new(mv);
-            let new_history: History = history.push_hist_new(new_board.get_hash());
+            let mut new_board = board.clone();
+            new_board.play(mv);
+            let new_history: History = history.push_hist_new(new_board.hash());
             let score = -self.negamax(
                 &new_board,
                 -beta,
@@ -222,8 +229,7 @@ impl Engine {
                 alpha = score;
                 best_move = Some(mv);
                 if !capture {
-                    sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] +=
-                        (depth as u32).pow(2);
+                    sinfo.history[mv.from as usize][mv.to as usize] += (depth as u32).pow(2);
                 }
             }
         }
@@ -258,7 +264,7 @@ impl Engine {
     ) -> i32 {
         bump!(QNODES_SEARCHED);
 
-        let mut movegen = MoveGen::new_legal(board);
+        let mut movegen = MoveGen::new(board);
 
         let standpat = eval(board);
 
@@ -279,25 +285,24 @@ impl Engine {
         }
 
         match board.status() {
-            chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => return -OO + ply as i32,
-            chess::BoardStatus::Stalemate => return 0,
+            cozy_chess::GameStatus::Ongoing => {}
+            cozy_chess::GameStatus::Won => return -OO + ply as i32,
+            cozy_chess::GameStatus::Drawn => return 0,
         }
 
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
 
-        let targets = board.color_combined(!board.side_to_move());
-        movegen.set_iterator_mask(*targets);
+        movegen
+            .captures
+            .sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
 
-        let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
-
-        for mv in sorted_mv {
-            let capture = board.piece_on(mv.get_dest()).is_some();
+        for mv in movegen.captures {
+            let capture = board.piece_on(mv.to).is_some();
             debug_assert!(capture);
 
-            let new_board = board.make_move_new(mv);
+            let mut new_board = board.clone();
+            new_board.play(mv);
             let score = -self.qsearch(&new_board, -beta, -alpha, sinfo, ply + 1);
 
             if score >= beta {

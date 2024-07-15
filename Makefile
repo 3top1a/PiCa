@@ -1,5 +1,5 @@
 CARGO := cargo
-RUSTFLAGS := -C target-cpu=native
+RUSTFLAGS := -C target-cpu=native  -C symbol-mangling-version=v0 -C target-feature=-bmi2
 
 .PHONY: all build run clean test
 

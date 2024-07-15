@@ -4,9 +4,10 @@ version = "0.0.5"
 edition = "2021"
 
 [dependencies]
-chess = "3.2.0"
+cozy-chess = { version = "0.3.4", features = ["std"] }
 lazy_static = "1.4.0"
-vampirc-uci = { version = "0.11.1", features = ["chess"] }
+cozy-uci = { git = "https://github.com/analog-hors/cozy-uci.git" }
+arrayvec = "0.7.4"
 
 [dev-dependencies]
 criterion = "0.3"
@@ -22,6 +23,9 @@ bench = false
 # https://rusz.space/small-rust.html
 opt-level = 3  # Optimize for size.
 lto = true # Use "fat" LTO
-strip = true # Remove debug symbols
+#strip = true # Remove debug symbols
 codegen-units = 1 # Compile in one big chunk
 panic = "abort" # Do not provide a stack trace on panic
+# For profiling
+strip = false # Remove debug symbols
+debug = 1
