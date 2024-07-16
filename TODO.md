@@ -1,5 +1,7 @@
 In order of importance:
 
+[ ] Unfuckup search
+[ ] move ordering tuning
 [ ] https://www.chessprogramming.org/Mate_Distance_Pruning
 [ ] https://www.chessprogramming.org/Principal_Variation_Search#PVS_and_NegaScout
 [ ] https://www.chessprogramming.org/Mobility

@@ -30,7 +30,20 @@ fn main() {
     let mut hist = History::new();
 
     for line in io::stdin().lock().lines() {
-        let msg: UciMessage = parse_one(&line.expect("Parse UCI message"));
+        let line = line.expect("receive stdin");
+
+        // Print move index dist
+        if line.trim() == "dist" {
+            let x = unsafe { stats::MOVE_INDEX_DIST };
+            let sum: u32 = x.iter().sum();
+            for (i, x) in x.iter().enumerate() {
+                if *x == 0 && i != 0 { continue; }
+                println!("{i}: {:.3}% ({x}/{sum})", (*x as f32 / sum as f32) * 100. );
+            }
+            continue;
+        }
+
+        let msg: UciMessage = parse_one(&line);
         match msg {
             UciMessage::Uci => {
                 println!("id name PiCa v{}", env!("CARGO_PKG_VERSION"));

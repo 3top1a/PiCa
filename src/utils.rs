@@ -75,13 +75,19 @@ fn piece_to_index(a: Option<Piece>) -> usize {
 }
 
 // TODO Tune this
-const KILLER_VALUE: u32 = 20;
 const PV_VALUE: u32 = 50;
+const HASH_VALUE: u32 = 40;
+const KILLER_VALUE: u32 = 20;
 
-fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8) -> u32 {
+fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<ChessMove>) -> u32 {
     // Check if the move is in the PV
     if sinfo.pv[ply as usize] == Some(mv) {
         return PV_VALUE;
+    }
+
+    // Check if move is best move indicated by TT
+    if hash == Some(mv) {
+        return HASH_VALUE;
     }
 
     let attacker = piece_to_index(b.piece_on(mv.get_source()));
@@ -115,9 +121,10 @@ pub fn sort_moves(
     board: &Board,
     sinfo: &SearchInfo,
     ply: u8,
+    hash: Option<ChessMove>,
 ) -> core::cmp::Ordering {
-    let a = score_move(a, board, sinfo, ply);
-    let b = score_move(b, board, sinfo, ply);
+    let a = score_move(a, board, sinfo, ply, hash);
+    let b = score_move(b, board, sinfo, ply, hash);
 
     b.cmp(&a)
 }

@@ -5,7 +5,7 @@ use chess::{Board, ChessMove, MoveGen};
 use crate::{
     bump,
     eval::eval,
-    stats::{self, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{self, add_move_index, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
     utils::{log_search_statistics, sort_moves, History, SearchInfo},
@@ -66,7 +66,7 @@ impl Engine {
 
             let movegen = MoveGen::new_legal(&board);
             let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0));
+            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0, None));
 
             for mv in sorted_mv {
                 if history.is_three_rep() {
@@ -146,9 +146,11 @@ impl Engine {
         let key = board.get_hash();
         let original_alpha = alpha;
         let entry = self.tt.get(key);
+        let mut tt_move = None;
         bump!(TT_CHECK);
         if entry.is_valid(key) && entry.depth >= depth {
             bump!(TT_HIT);
+            tt_move = entry.best_move;
             match entry.node_type {
                 NodeType::Exact => return entry.value,
                 NodeType::LowerBound => {
@@ -175,17 +177,14 @@ impl Engine {
 
         let movegen = MoveGen::new_legal(board);
         let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
-        // Move the TT move to first position
-        // TODO this is shit
-        if let Some(tt_move) = entry.best_move {
-            if let Some(index) = sorted_mv.iter().position(|&m| m == tt_move) {
-                sorted_mv.swap(0, index);
-            }
-        }
+        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply, tt_move));
 
         let mut best_move = None;
-        for mv in sorted_mv {
+        // Best move index to track location of best move, e.g. in 94% of cases the best move is first, etc.
+        let mut best_move_index = 0;
+
+        for mv_index in 0..sorted_mv.len() {
+            let mv = sorted_mv[mv_index];
             let capture = board.piece_on(mv.get_dest()).is_some();
             sinfo.pv[ply as usize] = Some(mv);
 
@@ -210,6 +209,8 @@ impl Engine {
                     best_move: Some(mv),
                 });
 
+                add_move_index(mv_index);
+
                 if !capture {
                     sinfo.killers[1][ply as usize] = sinfo.killers[0][ply as usize];
                     sinfo.killers[0][ply as usize] = Some(mv);
@@ -221,12 +222,16 @@ impl Engine {
             if score > alpha {
                 alpha = score;
                 best_move = Some(mv);
+                best_move_index = mv_index;
                 if !capture {
                     sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] +=
-                        (depth as u32).pow(2);
+                        depth as u32;
                 }
             }
         }
+
+        // Add move index to statistics
+        add_move_index(best_move_index);
 
         // Add to TT
         self.tt.set(TranspositionEntry {
@@ -291,7 +296,7 @@ impl Engine {
         movegen.set_iterator_mask(*targets);
 
         let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply));
+        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply, None));
 
         for mv in sorted_mv {
             let capture = board.piece_on(mv.get_dest()).is_some();
