@@ -10,6 +10,8 @@ use crate::{
 };
 
 #[derive(Debug)]
+/// Search info
+/// Is passed down and then up the search tree
 pub struct SearchInfo {
     pub pv: [Option<Move>; MAX_PLY as usize + 1],
     pub killers: [[Option<Move>; MAX_PLY as usize + 1]; 2],
@@ -77,7 +79,7 @@ fn piece_to_index(a: Option<Piece>) -> usize {
 }
 
 // TODO Tune this
-const KILLER_VALUE: u32 = 20;
+const KILLER_VALUE: u32 = 40;
 const PV_VALUE: u32 = 50;
 
 fn score_move(mv: Move, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<Move>) -> u32 {
@@ -89,7 +91,7 @@ fn score_move(mv: Move, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<Mov
     match hash {
         Some(x) => {
             if x == mv {
-                return PV_VALUE + 1u32;
+                return 100;
             }
         },
         None => {},
@@ -115,7 +117,7 @@ fn score_move(mv: Move, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<Mov
 
     // Otherwise, return the history score
     // Through testing it checks less nodes but is slower overall
-    // sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()]
+    // sinfo.history[mv.from as usize][mv.to as usize]
 
     mvv_lva
 }
@@ -134,8 +136,8 @@ pub fn sort_moves(
     b.cmp(&a)
 }
 
-const MAX_MOVES: usize = 128;
-const MAX_CAPTURES: usize = 32;
+pub const MAX_MOVES: usize = 128;
+pub const MAX_CAPTURES: usize = 32;
 
 pub struct MoveGen {
     pub moves: ArrayVec<Move, MAX_MOVES>,

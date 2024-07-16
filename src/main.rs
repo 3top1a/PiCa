@@ -72,8 +72,20 @@ fn main() {
 
         let cmd = UciCommand::parse_from(&line, &options);
 
+        // Print move index dist
+        if line.trim() == "dist" {
+            let x = unsafe { stats::MOVE_INDEX_DIST };
+            let sum: u32 = x.iter().sum();
+            for (i, x) in x.iter().enumerate() {
+                if *x == 0 { continue; }
+                println!("{i}: {:.3}% ({x}/{sum})", (*x as f32 / sum as f32) * 100. );
+            }
+            continue;
+        }
+
         if let Err(err) = cmd {
-            eprintln!("{}", err);
+
+            eprintln!("unknown command {}", err);
             continue;
         }
 

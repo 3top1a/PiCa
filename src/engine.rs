@@ -5,7 +5,7 @@ use cozy_chess::{Board, Move};
 use crate::{
     bump,
     eval::eval,
-    stats::{self, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{self, add_move_index, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
     utils::{log_search_statistics, sort_moves, History, MoveGen, SearchInfo},
@@ -183,7 +183,12 @@ impl Engine {
             .sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0, entry.best_move));
 
         let mut best_move = None;
-        for mv in movegen.moves {
+        // Best move index to track location of best moge, e.g. in 80% of cases the best move is first, etc.
+        let mut best_move_index = 0;
+
+        for mv_index in 0..movegen.moves.len() {
+            let mv = movegen.moves[mv_index];
+
             let capture = board.piece_on(mv.to).is_some();
             sinfo.pv[ply as usize] = Some(mv);
 
@@ -214,17 +219,24 @@ impl Engine {
                     sinfo.killers[0][ply as usize] = Some(mv);
                 }
 
+                // Add move index to statistics
+                add_move_index(mv_index);
+
                 return beta;
             }
 
             if score > alpha {
                 alpha = score;
                 best_move = Some(mv);
+                best_move_index = mv_index;
                 if !capture {
-                    sinfo.history[mv.from as usize][mv.to as usize] += (depth as u32).pow(2);
+                    sinfo.history[mv.from as usize][mv.to as usize] += depth as u32;
                 }
             }
         }
+
+        // Add move index to statistics
+        add_move_index(best_move_index);
 
         // Add to TT
         self.tt.set(TranspositionEntry {
