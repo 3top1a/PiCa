@@ -1,6 +1,5 @@
 const MAX_MOVES: usize = 127;
 
-
 pub static mut NODES_SEARCHED: u64 = 0;
 pub static mut QNODES_SEARCHED: u64 = 0;
 pub static mut CHECK_EXTENSION: i32 = 0;
@@ -29,5 +28,5 @@ pub fn reset() {
 }
 
 pub fn add_move_index(i: usize) {
-    unsafe { MOVE_INDEX_DIST [i] += 1 }
+    unsafe { MOVE_INDEX_DIST[i] += 1 }
 }

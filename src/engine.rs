@@ -5,9 +5,12 @@ use chess::{Board, ChessMove, MoveGen};
 use crate::{
     bump,
     eval::eval,
-    stats::{self, add_move_index, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{
+        self, add_move_index, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT,
+    },
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
+    tuning::move_ord_tune,
     utils::{log_search_statistics, sort_moves, History, SearchInfo},
 };
 
@@ -231,6 +234,7 @@ impl Engine {
         }
 
         // Add move index to statistics
+        move_ord_tune(&sorted_mv, board, sinfo, ply, tt_move, best_move_index);
         add_move_index(best_move_index);
 
         // Add to TT

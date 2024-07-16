@@ -7,7 +7,7 @@ use crate::{
     stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SearchInfo {
     pub pv: [Option<ChessMove>; MAX_PLY as usize + 1],
     pub killers: [[Option<ChessMove>; MAX_PLY as usize + 1]; 2],
@@ -59,13 +59,13 @@ pub fn log_search_statistics(
     }
 }
 
-pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
+pub const MVV_LVA: [[u32; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
     [0, 0, 0, 0, 0, 0, 0],
-    [0, 15, 14, 13, 12, 11, 10],
-    [0, 25, 24, 23, 22, 21, 20],
-    [0, 35, 34, 33, 32, 31, 30],
-    [0, 45, 44, 43, 42, 41, 40],
-    [0, 55, 54, 53, 52, 51, 50],
+    [0, 1500, 1400, 1300, 1200, 1100, 1000],
+    [0, 2500, 2400, 2300, 2200, 2100, 2000],
+    [0, 3500, 3400, 3300, 3200, 3100, 3000],
+    [0, 4500, 4400, 4300, 4200, 4100, 4000],
+    [0, 5500, 5400, 5300, 5200, 5100, 5000],
     [0, 0, 0, 0, 0, 0, 0],
 ];
 
@@ -75,25 +75,37 @@ fn piece_to_index(a: Option<Piece>) -> usize {
 }
 
 // TODO Tune this
-const PV_VALUE: u32 = 50;
-const HASH_VALUE: u32 = 40;
-const KILLER_VALUE: u32 = 20;
+pub static mut PV_VALUE: u32 = 30000;
+pub static mut HASH_VALUE: u32 = 30000;
+pub static mut KILLER_VALUE: u32 = 500;
+pub static mut PROMOTIONS: [u32; chess::NUM_PIECES] = [0, 600, 700, 800, 900, 0];
 
-fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<ChessMove>) -> u32 {
+fn score_move(
+    mv: ChessMove,
+    b: &Board,
+    sinfo: &SearchInfo,
+    ply: u8,
+    hash: Option<ChessMove>,
+) -> u32 {
     // Check if the move is in the PV
     if sinfo.pv[ply as usize] == Some(mv) {
-        return PV_VALUE;
+        return unsafe { PV_VALUE };
     }
 
     // Check if move is best move indicated by TT
     if hash == Some(mv) {
-        return HASH_VALUE;
+        return unsafe { HASH_VALUE };
     }
+
+    match mv.get_promotion() {
+        Some(x) => return unsafe { PROMOTIONS[x.to_index()] },
+        None => {}
+    };
 
     let attacker = piece_to_index(b.piece_on(mv.get_source()));
     let victim = piece_to_index(b.piece_on(mv.get_dest()));
 
-    let mvv_lva = MVV_LVA[victim][attacker] as u32;
+    let mvv_lva = MVV_LVA[victim][attacker];
 
     // If it's a capture, return MVV-LVA score
     if mvv_lva > 0 {
@@ -102,10 +114,10 @@ fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Optio
 
     // Check if the move is a killer move
     if sinfo.killers[0][ply as usize] == Some(mv) {
-        return KILLER_VALUE;
+        return unsafe { KILLER_VALUE };
     }
     if sinfo.killers[1][ply as usize] == Some(mv) {
-        return KILLER_VALUE - 10;
+        return unsafe { KILLER_VALUE } / 2;
     }
 
     // Otherwise, return the history score

@@ -5,6 +5,7 @@ mod tables;
 mod tests;
 mod time;
 mod tt;
+mod tuning;
 mod utils;
 
 use std::io;
@@ -37,9 +38,13 @@ fn main() {
             let x = unsafe { stats::MOVE_INDEX_DIST };
             let sum: u32 = x.iter().sum();
             for (i, x) in x.iter().enumerate() {
-                if *x == 0 && i != 0 { continue; }
-                println!("{i}: {:.3}% ({x}/{sum})", (*x as f32 / sum as f32) * 100. );
+                if *x == 0 && i != 0 {
+                    continue;
+                }
+                println!("{i}: {:.3}% ({x}/{sum})", (*x as f32 / sum as f32) * 100.);
             }
+            let worst_case = unsafe { tuning::MOVE_INDEX_DIST.clone() }.into_iter().last().unwrap();
+            println!("{:#?} {}",worst_case.sorted_mv[worst_case.best_move_index], worst_case.board.to_string()  );
             continue;
         }
 

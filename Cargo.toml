@@ -3,8 +3,18 @@ name = "pica"
 version = "0.0.5"
 edition = "2021"
 
+[features]
+# Move ordering tuning
+moveortune = []
+
+[[bin]]
+name = "tuner"
+path = "src/tuner/main.rs"
+required-features = ["moveortune"]
+
 [dependencies]
 chess = "3.2.0"
+fastrand = "2.1.0"
 lazy_static = "1.4.0"
 vampirc-uci = { version = "0.11.1", features = ["chess"] }
 
