@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use chess::Board;
+use vampirc_uci::UciTimeControl;
 
 use crate::engine::MAX_PLY;
 
@@ -47,6 +48,45 @@ impl TimeManager {
         }
 
         true
+    }
+
+    pub fn from_uci(uci: UciTimeControl, board: &Board) -> Self {
+        match uci {
+            UciTimeControl::Infinite => Self {
+                max_depth: None,
+                max_nodes: None,
+                board_time: None,
+                max_allowed_time_now: None,
+            },
+            UciTimeControl::MoveTime(x) => Self {
+                max_depth: None,
+                max_nodes: None,
+                board_time: None,
+                max_allowed_time_now: Some(x.num_milliseconds() as u32),
+            },
+            UciTimeControl::Ponder => todo!("podner not implemented yet"),
+            UciTimeControl::TimeLeft {
+                white_time,
+                black_time,
+                white_increment,
+                black_increment,
+                moves_to_go,
+            } => {
+                let color = board.side_to_move();
+
+                let time = match color {
+                    chess::Color::White => white_time,
+                    chess::Color::Black => black_time,
+                };
+
+                Self {
+                    board_time: time.map(|x| x.num_milliseconds() as u32),
+                    max_allowed_time_now: None,
+                    max_depth: None,
+                    max_nodes: None,
+                }
+            }
+        }
     }
 
     pub fn test_preset() -> Self {

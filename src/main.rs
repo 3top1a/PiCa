@@ -37,8 +37,10 @@ fn main() {
             let x = unsafe { stats::MOVE_INDEX_DIST };
             let sum: u32 = x.iter().sum();
             for (i, x) in x.iter().enumerate() {
-                if *x == 0 && i != 0 { continue; }
-                println!("{i}: {:.3}% ({x}/{sum})", (*x as f32 / sum as f32) * 100. );
+                if *x == 0 && i != 0 {
+                    continue;
+                }
+                println!("{i}: {:.3}% ({x}/{sum})", (*x as f32 / sum as f32) * 100.);
             }
             continue;
         }
@@ -100,53 +102,12 @@ fn main() {
                 }
             }
             UciMessage::Go {
-                time_control: tc,
+                time_control,
                 search_control: _,
             } => {
-                let color = board.side_to_move();
-
-                let tc = if let Some(tc) = tc {
-                    match tc {
-                        vampirc_uci::UciTimeControl::MoveTime(ms) => TimeManager {
-                            max_depth: None,
-                            max_nodes: None,
-                            board_time: None,
-                            max_allowed_time_now: Some(ms.num_milliseconds() as u32),
-                        },
-                        vampirc_uci::UciTimeControl::TimeLeft {
-                            white_time,
-                            black_time,
-                            ..
-                        } => TimeManager {
-                            max_depth: None,
-                            max_nodes: None,
-                            max_allowed_time_now: None,
-                            board_time: {
-                                let w = white_time
-                                    .map_or(60000, |white_time| white_time.num_milliseconds());
-                                let b = black_time
-                                    .map_or(60000, |black_time| black_time.num_milliseconds());
-
-                                match color {
-                                    chess::Color::Black => Some(b as u32),
-                                    chess::Color::White => Some(w as u32),
-                                }
-                            },
-                        },
-                        _ => TimeManager {
-                            max_depth: None,
-                            max_nodes: None,
-                            board_time: None,
-                            max_allowed_time_now: None,
-                        },
-                    }
-                } else {
-                    TimeManager {
-                        max_depth: None,
-                        max_nodes: None,
-                        board_time: Some(300000), // 5 minutes
-                        max_allowed_time_now: Some(5000),
-                    }
+                let tc = match time_control {
+                    Some(x) => TimeManager::from_uci(x, &board),
+                    None => TimeManager::test_preset(),
                 };
 
                 let mv = eng.start(board, tc, hist);

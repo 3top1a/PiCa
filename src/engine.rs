@@ -5,7 +5,9 @@ use chess::{Board, ChessMove, MoveGen};
 use crate::{
     bump,
     eval::eval,
-    stats::{self, add_move_index, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{
+        self, add_move_index, CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT,
+    },
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
     utils::{log_search_statistics, sort_moves, History, SearchInfo},

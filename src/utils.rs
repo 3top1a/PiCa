@@ -79,7 +79,13 @@ const PV_VALUE: u32 = 50;
 const HASH_VALUE: u32 = 40;
 const KILLER_VALUE: u32 = 20;
 
-fn score_move(mv: ChessMove, b: &Board, sinfo: &SearchInfo, ply: u8, hash: Option<ChessMove>) -> u32 {
+fn score_move(
+    mv: ChessMove,
+    b: &Board,
+    sinfo: &SearchInfo,
+    ply: u8,
+    hash: Option<ChessMove>,
+) -> u32 {
     // Check if the move is in the PV
     if sinfo.pv[ply as usize] == Some(mv) {
         return PV_VALUE;
