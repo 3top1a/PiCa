@@ -76,7 +76,6 @@ impl Engine {
                 }
 
                 let nb = board.make_move_new(mv);
-                sinfo.pv[0] = Some(mv);
                 let new_history = history.push_hist_new(board.get_hash());
                 let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo, new_history);
 
@@ -95,7 +94,7 @@ impl Engine {
             }
 
             if self.info {
-                log_search_statistics(depth, best_score, &start_of_search_instant, &sinfo, &board);
+                log_search_statistics(depth, best_score, &start_of_search_instant, &sinfo, &board, &self.tt, &best_mv);
             }
 
             if nodes_last_ply == unsafe { NODES_SEARCHED } && depth > 12 {
@@ -146,7 +145,7 @@ impl Engine {
 
         // Check TT
         let key = board.get_hash();
-        let original_alpha = alpha;
+        let old_alpha = alpha;
         let entry = self.tt.get(key);
         let mut tt_move = None;
         bump!(TT_CHECK);
@@ -188,7 +187,6 @@ impl Engine {
         for mv_index in 0..sorted_mv.len() {
             let mv = sorted_mv[mv_index];
             let capture = board.piece_on(mv.get_dest()).is_some();
-            sinfo.pv[ply as usize] = Some(mv);
 
             let new_board = board.make_move_new(mv);
             let new_history: History = history.push_hist_new(new_board.get_hash());
@@ -241,7 +239,7 @@ impl Engine {
             value: alpha,
             depth,
             node_type: {
-                if alpha > original_alpha {
+                if alpha > old_alpha {
                     NodeType::Exact
                 } else {
                     NodeType::UpperBound

@@ -89,6 +89,7 @@ mod test {
         t.set(a);
 
         assert_eq!(t.get(a.key), a);
+        assert_eq!(t.get(a.key).best_move, a.best_move);
         assert!(t.get(a.key).is_valid(a.key))
     }
 }

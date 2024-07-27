@@ -17,3 +17,7 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+testout
+testout/*
+testout/sprt-18:22-27.07.pgn

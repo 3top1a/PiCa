@@ -4,12 +4,11 @@ use chess::{Board, ChessMove, Piece};
 
 use crate::{
     engine::MAX_PLY,
-    stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
+    stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT}, tt::TT,
 };
 
 #[derive(Debug)]
 pub struct SearchInfo {
-    pub pv: [Option<ChessMove>; MAX_PLY as usize + 1],
     pub killers: [[Option<ChessMove>; MAX_PLY as usize + 1]; 2],
     pub history: [[u32; 64]; 64],
 }
@@ -17,20 +16,47 @@ pub struct SearchInfo {
 impl SearchInfo {
     pub fn new() -> Self {
         Self {
-            pv: [None; MAX_PLY as usize + 1],
             killers: [[None; MAX_PLY as usize + 1]; 2],
             history: [[0; 64]; 64],
         }
     }
+}
 
-    pub fn print(&self) -> String {
-        self.pv
-            .iter()
-            .filter_map(|x| *x)
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .join(" ")
+fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
+    let mut board = board.clone();
+    let mut pv = Vec::with_capacity(64);
+    if let Some(current_best) = current_best {
+        pv.push(current_best);
+        board = board.make_move_new(current_best);
     }
+
+    let mut depth = 1;
+    loop {
+        let key = board.get_hash();
+        let entry = tt.get(key);
+
+        println!("Depth: {}, Key: {:x}, Valid: {}", depth, key, entry.is_valid(key));
+        if entry.is_valid(key) {
+            if let Some(mv) = entry.best_move {
+                println!("  Found move: {}", mv);
+                pv.push(mv);
+                board = board.make_move_new(mv);
+                depth += 1;
+            } else {
+                println!("  No best move found");
+                break;
+            }
+        } else {
+            println!("  Invalid entry or insufficient depth");
+            break;
+        }
+    }
+
+    println!("Total PV length: {}", pv.len());
+    pv.iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join(" ")
 }
 
 pub fn log_search_statistics(
@@ -39,6 +65,8 @@ pub fn log_search_statistics(
     start: &Instant,
     sinfo: &SearchInfo,
     board: &Board,
+    tt: &TT,
+    bestmv: &Option<ChessMove>
 ) {
     /*let who2move = match board.side_to_move() {
         chess::Color::White => 1,
@@ -49,7 +77,7 @@ pub fn log_search_statistics(
         println!(
             "info score cp {} depth {depth} nodes {NODES_SEARCHED} qnodes {QNODES_SEARCHED} time {time} pv {}",
             best_score,
-            sinfo.print()
+            printpv(tt, board, *bestmv),
         );
         println!(
             "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
@@ -75,8 +103,7 @@ fn piece_to_index(a: Option<Piece>) -> usize {
 }
 
 // TODO Tune this
-const PV_VALUE: u32 = 50;
-const HASH_VALUE: u32 = 40;
+const HASH_VALUE: u32 = 50;
 const KILLER_VALUE: u32 = 20;
 
 fn score_move(
@@ -86,11 +113,6 @@ fn score_move(
     ply: u8,
     hash: Option<ChessMove>,
 ) -> u32 {
-    // Check if the move is in the PV
-    if sinfo.pv[ply as usize] == Some(mv) {
-        return PV_VALUE;
-    }
-
     // Check if move is best move indicated by TT
     if hash == Some(mv) {
         return HASH_VALUE;
