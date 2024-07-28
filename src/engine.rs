@@ -10,7 +10,7 @@ use crate::{
     },
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
-    utils::{log_search_statistics, sort_moves, History, SearchInfo},
+    utils::{log_search_statistics, sort_moves, History, MoveGenOrdered, SearchInfo},
 };
 
 pub const OO: i32 = 10000;
@@ -176,16 +176,14 @@ impl Engine {
             depth += 1
         };
 
-        let movegen = MoveGen::new_legal(board);
-        let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply, tt_move));
+        let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, tt_move, false);
 
         let mut best_move = None;
         // Best move index to track location of best move, e.g. in 94% of cases the best move is first, etc.
         let mut best_move_index = 0;
 
-        for mv_index in 0..sorted_mv.len() {
-            let mv = sorted_mv[mv_index];
+        for mv_index in 0..movegen.len {
+            let mv = movegen.pick_next().unwrap();
             let capture = board.piece_on(mv.get_dest()).is_some();
 
             let new_board = board.make_move_new(mv);
@@ -292,13 +290,10 @@ impl Engine {
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
 
-        let targets = board.color_combined(!board.side_to_move());
-        movegen.set_iterator_mask(*targets);
+        let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, None, true);
 
-        let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-        sorted_mv.sort_by(|a, b| sort_moves(*a, *b, board, &sinfo, ply, None));
-
-        for mv in sorted_mv {
+        for mv_i in 0..movegen.len {
+            let mv = movegen.pick_next().unwrap();
             let capture = board.piece_on(mv.get_dest()).is_some();
             debug_assert!(capture);
 

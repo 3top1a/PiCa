@@ -1,6 +1,7 @@
 use std::{collections::HashSet, str::FromStr, time::Instant};
+use arrayvec::ArrayVec;
 
-use chess::{Board, ChessMove, Piece};
+use chess::{Board, ChessMove, MoveGen, Piece};
 
 use crate::{
     engine::MAX_PLY,
@@ -35,28 +36,76 @@ fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
         let key = board.get_hash();
         let entry = tt.get(key);
 
-        println!("Depth: {}, Key: {:x}, Valid: {}", depth, key, entry.is_valid(key));
+        // dbg!("Depth: {}, Key: {:x}, Valid: {}", depth, key, entry.is_valid(key));
         if entry.is_valid(key) {
             if let Some(mv) = entry.best_move {
-                println!("  Found move: {}", mv);
+                // dbg!("  Found move: {}", mv);
                 pv.push(mv);
                 board = board.make_move_new(mv);
                 depth += 1;
             } else {
-                println!("  No best move found");
+                // dbg!("  No best move found");
                 break;
             }
         } else {
-            println!("  Invalid entry or insufficient depth");
+            // dbg!("  Invalid entry or insufficient depth");
             break;
         }
     }
 
-    println!("Total PV length: {}", pv.len());
+    // dbg!("Total PV length: {}", pv.len());
     pv.iter()
         .map(|x| x.to_string())
         .collect::<Vec<String>>()
         .join(" ")
+}
+
+pub const MAX_MOVES: usize = 128;
+
+pub struct MoveGenOrdered {
+    moves: ArrayVec<(ChessMove, i32), MAX_MOVES>,
+    pub len: usize,
+}
+
+impl MoveGenOrdered {
+    pub fn new(board: &Board, sinfo: &SearchInfo, ply: &u8, tt_move: Option<ChessMove>, caponly: bool) -> Self {
+        let mut moves = ArrayVec::new();
+
+        let mut movegen = MoveGen::new_legal(board);
+        if caponly {
+            let targets = board.color_combined(!board.side_to_move());
+            movegen.set_iterator_mask(*targets);
+        }
+
+        for mv in movegen {
+            let score = score_move(mv, board, sinfo, *ply, tt_move);
+            moves.push((mv, score as i32));
+        }
+
+        Self {
+            len: moves.len(),
+            moves,
+        }
+    }
+
+    pub fn pick_next(&mut self) -> Option<ChessMove> {
+        let mut best_mv = None;
+        let mut best_score = -1;
+        let mut best_index = 0;
+
+        for mv_i in 0..self.moves.len() {
+            let mv = self.moves[mv_i];
+            if mv.1 > best_score {
+                best_mv = Some(mv.0);
+                best_score = mv.1;
+                best_index = mv_i;
+            }
+        }
+
+        self.moves.remove(best_index);
+
+        best_mv
+    }
 }
 
 pub fn log_search_statistics(
@@ -138,6 +187,7 @@ fn score_move(
 
     // Otherwise, return the history score
     // Through testing it checks less nodes but is slower overall
+    // TODO fix this
     // sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()]
 
     mvv_lva

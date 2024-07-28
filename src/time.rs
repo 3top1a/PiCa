@@ -23,7 +23,7 @@ impl TimeManager {
         start_of_search: Instant,
     ) -> bool {
         // TODO Yeet this HACK
-        let estimate_time_branching_factor = 10;
+        let estimate_time_branching_factor = 12;
 
         // Check for max depth
         if depth > self.max_depth.unwrap_or(MAX_PLY) {
