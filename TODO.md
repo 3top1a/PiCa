@@ -1,6 +1,5 @@
 In order of importance:
 
-[ ] Unfuckup search
 [ ] move ordering tuning
 [ ] https://www.chessprogramming.org/Mate_Distance_Pruning
 [ ] https://www.chessprogramming.org/Principal_Variation_Search#PVS_and_NegaScout
@@ -24,3 +23,5 @@ Done:
 [x] Qsearch
 [x] Rewrite eval from scratch
 [x] https://github.com/kz04px/swizzles/tree/master/src/tests/search
+[x] Unfuckup search
+[x] uProf

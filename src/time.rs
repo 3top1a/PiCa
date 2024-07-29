@@ -13,6 +13,17 @@ pub struct TimeManager {
     pub max_allowed_time_now: Option<u32>,
 }
 
+impl Default for TimeManager {
+    fn default() -> Self {
+        Self {
+            board_time: None,
+            max_allowed_time_now: None,
+            max_depth: None,
+            max_nodes: None,
+        }
+    }
+}
+
 impl TimeManager {
     // https://www.chessprogramming.org/Time_Management
     pub fn can_continue(

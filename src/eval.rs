@@ -10,6 +10,7 @@ const PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 10, 30, 45, 70, 120, 200];
 const ISOLATED_PAWN_PENALTY: i32 = -20;
 
 /// Evaluation function.
+#[inline(never)] // for profiling
 pub fn eval(board: &Board) -> i32 {
     let who2move = match board.side_to_move() {
         White => 1,

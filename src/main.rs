@@ -7,6 +7,7 @@ mod time;
 mod tt;
 mod utils;
 
+use std::env::args;
 use std::io;
 use std::io::BufRead;
 use std::str::FromStr;
@@ -28,6 +29,12 @@ fn main() {
         ..Default::default()
     };
     let mut hist = History::new();
+
+    // Check if args contain `--bench` and if so, search do a depth of 8
+    if args().any(|x| x.contains("--bench")) {
+        eng.start(Board::default(), TimeManager{max_depth: Some(8), ..Default::default()}, hist);
+        return;
+    }
 
     for line in io::stdin().lock().lines() {
         let line = line.expect("receive stdin");

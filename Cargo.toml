@@ -23,6 +23,8 @@ bench = false
 # https://rusz.space/small-rust.html
 opt-level = 3  # Optimize for size.
 lto = true # Use "fat" LTO
-strip = true # Remove debug symbols
+strip = false
 codegen-units = 1 # Compile in one big chunk
 panic = "abort" # Do not provide a stack trace on panic
+debug = true
+# debug is true for profiling
