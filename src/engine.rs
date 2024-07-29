@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use chess::{Board, ChessMove, MoveGen};
+use chess::{Board, BoardStatus, ChessMove, MoveGen};
 
 use crate::{
     bump,
@@ -124,16 +124,6 @@ impl Engine {
     ) -> i32 {
         bump!(NODES_SEARCHED);
 
-        match board.status() {
-            chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => return -OO + ply as i32,
-            chess::BoardStatus::Stalemate => return 0,
-        }
-
-        if history.is_three_rep() {
-            return -OO;
-        }
-
         // Check extension
         let in_check = board.checkers().0 > 0;
 
@@ -141,6 +131,10 @@ impl Engine {
         // TODO Try not allowing qsearch if in check
         if (depth == 0 && !in_check) || ply > MAX_PLY {
             return self.qsearch(board, alpha, beta, &sinfo, ply);
+        }
+
+        if history.is_three_rep() {
+            return -OO;
         }
 
         // Check TT
@@ -168,6 +162,13 @@ impl Engine {
             }
         }
 
+        let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, tt_move, false);
+        match movegen.status() {
+            chess::BoardStatus::Ongoing => {}
+            chess::BoardStatus::Checkmate => return -OO + ply as i32,
+            chess::BoardStatus::Stalemate => return 0,
+        }
+
         // Check extention
         // https://www.chessprogramming.org/Check_Extensions
         // Also avoid flooding the stack by limiting it
@@ -175,8 +176,6 @@ impl Engine {
             bump!(CHECK_EXTENSION);
             depth += 1
         };
-
-        let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, tt_move, false);
 
         let mut best_move = None;
         // Best move index to track location of best move, e.g. in 94% of cases the best move is first, etc.
@@ -269,7 +268,7 @@ impl Engine {
         }
 
         // Check if standpat may become a new alpha
-        if alpha < standpat {
+        if standpat > alpha {
             alpha = standpat;
         }
 
@@ -279,16 +278,15 @@ impl Engine {
             return alpha;
         }
 
-        match board.status() {
-            chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => return -OO + ply as i32,
-            chess::BoardStatus::Stalemate => return 0,
-        }
-
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
-
+        
         let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, None, true);
+        match movegen.status() {
+            BoardStatus::Ongoing => {}
+            BoardStatus::Checkmate => return -OO + ply as i32,
+            BoardStatus::Stalemate => return 0,
+        }
 
         for _ in 0..movegen.len {
             let mv = movegen.pick_next().unwrap();

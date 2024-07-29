@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use arrayvec::ArrayVec;
 
-use chess::{Board, ChessMove, MoveGen, Piece};
+use chess::{BitBoard, Board, BoardStatus, ChessMove, MoveGen, Piece};
 
 use crate::{
     engine::MAX_PLY,
@@ -66,26 +66,54 @@ pub const MAX_MOVES: usize = 128;
 pub struct MoveGenOrdered {
     moves: ArrayVec<(ChessMove, i32), MAX_MOVES>,
     pub len: usize,
+    real_len: usize,
+    board_checkers: u64,
 }
 
 impl MoveGenOrdered {
     pub fn new(board: &Board, sinfo: &SearchInfo, ply: &u8, tt_move: Option<ChessMove>, caponly: bool) -> Self {
         let mut moves = ArrayVec::new();
 
-        let mut movegen = MoveGen::new_legal(board);
-        if caponly {
-            let targets = board.color_combined(!board.side_to_move());
-            movegen.set_iterator_mask(*targets);
-        }
+        let movegen = MoveGen::new_legal(board);
+
+        // If it's capture only, make the target squares the opponents squares
+        // otherwise it's all squares
+        let targets = if caponly {
+            *board.color_combined(!board.side_to_move())
+        } else {
+            !chess::EMPTY
+        };
+
+        // keep track of the real length without the target for status checking
+        let mut real_len = 0;
 
         for mv in movegen {
-            let score = score_move(mv, board, sinfo, *ply, tt_move);
-            moves.push((mv, score as i32));
+            if (BitBoard::from_square(mv.get_dest()) & targets).0 != 0 {
+                let score = score_move(mv, board, sinfo, *ply, tt_move);
+                moves.push((mv, score as i32));
+            }
+
+            real_len += 1;
         }
 
         Self {
             len: moves.len(),
+            real_len,
             moves,
+            board_checkers: board.checkers().0,
+        }
+    }
+
+    pub fn status(&self) -> BoardStatus{
+        match self.real_len {
+            0 => {
+                if self.board_checkers == 0 {
+                    BoardStatus::Stalemate
+                } else {
+                    BoardStatus::Checkmate
+                }
+            }
+            _ => BoardStatus::Ongoing,
         }
     }
 

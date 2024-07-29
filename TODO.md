@@ -1,5 +1,6 @@
 In order of importance:
 
+[ ] Time management
 [ ] move ordering tuning
 [ ] https://www.chessprogramming.org/Mate_Distance_Pruning
 [ ] https://www.chessprogramming.org/Principal_Variation_Search#PVS_and_NegaScout
