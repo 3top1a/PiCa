@@ -1,5 +1,7 @@
 use chess::{BitBoard, File, Rank, Square};
 use lazy_static::lazy_static;
+use const_for::const_for;
+
 
 const MG_VALUE: [i32; 6] = [82, 337, 365, 477, 1025, 0];
 const EG_VALUE: [i32; 6] = [94, 281, 297, 512, 936, 0];
@@ -180,32 +182,31 @@ const EG_PIECES: [[i32; 64]; 6] = [
     EG_KING_TABLE,
 ];
 
+pub const MG: [[i32; 64]; 6] = {
+    let mut mg = [[0; 64]; 6];
+
+    const_for!(piece in 0..6 => {
+        const_for!(square in 0..64 => {
+            mg[piece][square] = MG_PIECES[piece][square] + MG_VALUE[piece];
+        });
+    });
+
+    mg
+};
+
+pub const EG: [[i32; 64]; 6] = {
+    let mut eg = [[0; 64]; 6];
+
+    const_for!(piece in 0..6 => {
+        const_for!(square in 0..64 => {
+            eg[piece][square] = EG_PIECES[piece][square] + MG_VALUE[piece];
+        });
+    });
+
+    eg
+};
+
 lazy_static! {
-    pub static ref MG: [[i32; 64]; 6] = {
-        let mut mg = [[0; 64]; 6];
-
-        for piece in chess::ALL_PIECES {
-            for square in chess::ALL_SQUARES {
-                mg[piece.to_index()][square.to_index()] =
-                    MG_PIECES[piece.to_index()][square.to_index()] + MG_VALUE[piece.to_index()];
-            }
-        }
-
-        mg
-    };
-    pub static ref EG: [[i32; 64]; 6] = {
-        let mut eg = [[0; 64]; 6];
-
-        for piece in chess::ALL_PIECES {
-            for square in chess::ALL_SQUARES {
-                eg[piece.to_index()][square.to_index()] =
-                    EG_PIECES[piece.to_index()][square.to_index()] + EG_VALUE[piece.to_index()];
-            }
-        }
-
-        eg
-    };
-
     pub static ref PASSED_PAWN_MASKS: [[BitBoard; 64]; 2] = {
         let mut white_masks = [BitBoard::new(0); 64];
         let mut black_masks = [BitBoard::new(0); 64];

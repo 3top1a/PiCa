@@ -1,4 +1,4 @@
-use chess::{BitBoard, Board, Color, MoveGen, Square, ALL_SQUARES, EMPTY};
+use chess::{BitBoard, Board, Color, Square, ALL_SQUARES, EMPTY};
 
 use chess::Color::{Black, White};
 use chess::Piece;

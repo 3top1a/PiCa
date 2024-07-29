@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 arrayvec = "0.7.4"
 chess = "3.2.0"
+const_for = "0.1.4"
 lazy_static = "1.4.0"
 vampirc-uci = { version = "0.11.1", features = ["chess"] }
 
@@ -21,7 +22,7 @@ bench = false
 
 [profile.release]
 # https://rusz.space/small-rust.html
-opt-level = 3  # Optimize for size.
+opt-level = 3  # Optimize for speed.
 lto = true # Use "fat" LTO
 strip = false
 codegen-units = 1 # Compile in one big chunk
