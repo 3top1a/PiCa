@@ -32,7 +32,7 @@ fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
         board = board.make_move_new(current_best);
     }
 
-    let mut depth = 1;
+    // let mut depth = 1;
     loop {
         let key = board.get_hash();
         let entry = tt.get(key);
@@ -43,7 +43,7 @@ fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
                 // dbg!("  Found move: {}", mv);
                 pv.push(mv);
                 board = board.make_move_new(mv);
-                depth += 1;
+                // depth += 1;
             } else {
                 // dbg!("  No best move found");
                 break;
@@ -113,7 +113,7 @@ pub fn log_search_statistics(
     depth: u8,
     best_score: i32,
     start: &Instant,
-    sinfo: &SearchInfo,
+    _sinfo: &SearchInfo,
     board: &Board,
     tt: &TT,
     bestmv: &Option<ChessMove>
@@ -253,13 +253,13 @@ impl History {
 }
 
 mod tests {
-    use crate::utils::History;
-    use chess::{Board, ChessMove};
-    use std::str::FromStr;
-
     #[test]
     // 1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31
     fn test_three_rep() {
+        use crate::utils::History;
+        use chess::{Board, ChessMove};
+        use std::str::FromStr;
+
         let mut b = Board::from_str("8/8/k3K3/8/8/2Q5/8/8 w - - 5 9").unwrap();
         let mut h = History::new();
         h.push_hist(b.get_hash());

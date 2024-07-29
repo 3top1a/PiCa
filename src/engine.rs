@@ -261,8 +261,6 @@ impl Engine {
     ) -> i32 {
         bump!(QNODES_SEARCHED);
 
-        let mut movegen = MoveGen::new_legal(board);
-
         let standpat = eval(board);
 
         // Check if standpat causes a beta cutoff
@@ -292,7 +290,7 @@ impl Engine {
 
         let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, None, true);
 
-        for mv_i in 0..movegen.len {
+        for _ in 0..movegen.len {
             let mv = movegen.pick_next().unwrap();
             let capture = board.piece_on(mv.get_dest()).is_some();
             debug_assert!(capture);

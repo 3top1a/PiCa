@@ -8,7 +8,7 @@ use crate::engine::MAX_PLY;
 #[derive(Debug)]
 pub struct TimeManager {
     pub max_depth: Option<u8>,
-    pub max_nodes: Option<u64>,
+    pub _max_nodes: Option<u64>,
     pub board_time: Option<u32>,
     pub max_allowed_time_now: Option<u32>,
 }
@@ -19,7 +19,7 @@ impl Default for TimeManager {
             board_time: None,
             max_allowed_time_now: None,
             max_depth: None,
-            max_nodes: None,
+            _max_nodes: None,
         }
     }
 }
@@ -29,8 +29,8 @@ impl TimeManager {
     pub fn can_continue(
         &self,
         depth: u8,
-        board: Board,
-        nodes: u64,
+        _board: Board,
+        _nodes: u64,
         start_of_search: Instant,
     ) -> bool {
         // TODO Yeet this HACK
@@ -65,13 +65,13 @@ impl TimeManager {
         match uci {
             UciTimeControl::Infinite => Self {
                 max_depth: None,
-                max_nodes: None,
+                _max_nodes: None,
                 board_time: None,
                 max_allowed_time_now: None,
             },
             UciTimeControl::MoveTime(x) => Self {
                 max_depth: None,
-                max_nodes: None,
+                _max_nodes: None,
                 board_time: None,
                 max_allowed_time_now: Some(x.num_milliseconds() as u32),
             },
@@ -79,9 +79,7 @@ impl TimeManager {
             UciTimeControl::TimeLeft {
                 white_time,
                 black_time,
-                white_increment,
-                black_increment,
-                moves_to_go,
+                ..
             } => {
                 let color = board.side_to_move();
 
@@ -94,7 +92,7 @@ impl TimeManager {
                     board_time: time.map(|x| x.num_milliseconds() as u32),
                     max_allowed_time_now: None,
                     max_depth: None,
-                    max_nodes: None,
+                    _max_nodes: None,
                 }
             }
         }
@@ -105,7 +103,7 @@ impl TimeManager {
             board_time: None,
             max_allowed_time_now: Some(5000),
             max_depth: None,
-            max_nodes: None,
+            _max_nodes: None,
         }
     }
 }

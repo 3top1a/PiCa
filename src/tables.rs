@@ -153,17 +153,17 @@ const EG_KING_TABLE: [i32; 64] = [
     -53, -34, -21, -11, -28, -14, -24, -43
 ];
 
-#[rustfmt::skip]
-pub const FLIP: [usize; 64] = [
-    56, 57, 58, 59, 60, 61, 62, 63,
-    48, 49, 50, 51, 52, 53, 54, 55,
-    40, 41, 42, 43, 44, 45, 46, 47,
-    32, 33, 34, 35, 36, 37, 38, 39,
-    24, 25, 26, 27, 28, 29, 30, 31,
-    16, 17, 18, 19, 20, 21, 22, 23,
-     8,  9, 10, 11, 12, 13, 14, 15,
-     0,  1,  2,  3,  4,  5,  6,  7,
-];
+// #[rustfmt::skip]
+// pub const FLIP: [usize; 64] = [
+//     56, 57, 58, 59, 60, 61, 62, 63,
+//     48, 49, 50, 51, 52, 53, 54, 55,
+//     40, 41, 42, 43, 44, 45, 46, 47,
+//     32, 33, 34, 35, 36, 37, 38, 39,
+//     24, 25, 26, 27, 28, 29, 30, 31,
+//     16, 17, 18, 19, 20, 21, 22, 23,
+//      8,  9, 10, 11, 12, 13, 14, 15,
+//      0,  1,  2,  3,  4,  5,  6,  7,
+// ];
 
 const MG_PIECES: [[i32; 64]; 6] = [
     MG_PAWN_TABLE,
@@ -199,7 +199,7 @@ pub const EG: [[i32; 64]; 6] = {
 
     const_for!(piece in 0..6 => {
         const_for!(square in 0..64 => {
-            eg[piece][square] = EG_PIECES[piece][square] + MG_VALUE[piece];
+            eg[piece][square] = EG_PIECES[piece][square] + EG_VALUE[piece];
         });
     });
 
@@ -270,12 +270,10 @@ lazy_static! {
 }
 
 mod tests {
-    use chess::Square;
-
-    use super::PASSED_PAWN_MASKS;
-
     #[test]
     fn test_passed_pawn_mask() {
+        use chess::Square;
+        use super::PASSED_PAWN_MASKS;
         let white_pawn_square = Square::E4;
         let black_pawn_square = Square::D5;
         let white_overflow_test = Square::H5;

@@ -11,7 +11,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 Board::default(),
                 TimeManager {
                     max_depth: Some(5),
-                    max_nodes: None,
+                    _max_nodes: None,
                     board_time: None,
                     max_allowed_time_now: None,
                 },

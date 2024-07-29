@@ -1,4 +1,4 @@
-use chess::{BitBoard, Board, Color, Square, ALL_SQUARES, EMPTY};
+use chess::{BitBoard, Board, Color, EMPTY};
 
 use chess::Color::{Black, White};
 use chess::Piece;
@@ -8,6 +8,7 @@ use crate::tables::{EG, ISOLATED_PAWN_MASKS, MG, PASSED_PAWN_MASKS};
 const PIECE_PHASE_VALUES: [i32; 6] = [0, 1, 1, 2, 4, 0];
 const PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 10, 30, 45, 70, 120, 200];
 const ISOLATED_PAWN_PENALTY: i32 = -20;
+const TEMPO_BONUS: i32 = 10;
 
 /// Evaluation function.
 #[inline(never)] // for profiling
@@ -99,7 +100,7 @@ pub fn eval(board: &Board) -> i32 {
     // Tempo bonus I guess
     // From https://www.chessprogramming.org/Tempo:
     // > That bonus is useful mainly in the opening and middle game positions, but can be counterproductive in the endgame.
-    mg_sc += 10 * who2move;
+    mg_sc += TEMPO_BONUS * who2move;
 
     // Tapered score
     let game_phase = game_phase.min(24);
