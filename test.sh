@@ -11,7 +11,7 @@ cutechess-cli \
 -games 2 -rounds 2500 -repeat 2 -maxmoves 200 \
 -openings file=silversuite.pgn plies=20 \
 -sprt elo0=0 elo1=10 alpha=0.05 beta=0.05 \
--concurrency 8 \
+-concurrency 12 \
 -ratinginterval 10 \
 -recover \
 -pgnout "testout/sprt-${id}.pgn"

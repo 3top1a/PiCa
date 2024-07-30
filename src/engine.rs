@@ -272,12 +272,6 @@ impl Engine {
             alpha = standpat;
         }
 
-        const BIG_DELTA: i32 = 977;
-        if standpat < alpha - BIG_DELTA {
-            // Happens 13k times in a depth 7 search
-            return alpha;
-        }
-
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
         
