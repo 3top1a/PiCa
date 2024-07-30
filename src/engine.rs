@@ -44,11 +44,7 @@ impl Engine {
         stats::reset();
         let start_of_search_instant = Instant::now();
 
-        let mut alpha = -OO;
-        let beta = OO;
-
         let mut best_mv = None;
-        let mut best_score = -OO * 2;
 
         let mut sinfo = SearchInfo::new();
 
@@ -65,38 +61,23 @@ impl Engine {
             }
 
             stats::reset();
+            let best_score = self.negamax(&board, -OO, OO, depth, 0, &mut sinfo, history);
 
-            let movegen = MoveGen::new_legal(&board);
-            let mut sorted_mv = movegen.collect::<Vec<ChessMove>>();
-            sorted_mv.sort_by(|a, b| sort_moves(*a, *b, &board, &sinfo, 0, None));
-
-            for mv in sorted_mv {
-                if history.is_three_rep() {
-                    break;
-                }
-
-                let nb = board.make_move_new(mv);
-                let new_history = history.push_hist_new(board.get_hash());
-                let score = -self.negamax(&nb, -beta, -alpha, depth, 1, &mut sinfo, new_history);
-
-                if score > best_score {
-                    best_score = score;
-                    best_mv = Some(mv);
-                }
-
-                if score > alpha {
-                    alpha = score;
-                }
-
-                if alpha >= beta {
-                    break;
-                }
-            }
+            best_mv = self.tt.get(board.get_hash()).best_move;
 
             if self.info {
-                log_search_statistics(depth, best_score, &start_of_search_instant, &sinfo, &board, &self.tt, &best_mv);
+                log_search_statistics(
+                    depth,
+                    best_score,
+                    &start_of_search_instant,
+                    &sinfo,
+                    &board,
+                    &self.tt,
+                    &best_mv,
+                );
             }
 
+            // TODO replace with mate checking and early return
             if nodes_last_ply == unsafe { NODES_SEARCHED } && depth > 12 {
                 println!(
                     "debug No change in searched nodes despite larger search depth, exiting early"
@@ -178,7 +159,8 @@ impl Engine {
         };
 
         let mut best_move = None;
-        // Best move index to track location of best move, e.g. in 94% of cases the best move is first, etc.
+        let mut best_score = -OO; // Initialize best_score to a very low value
+                                  // Best move index to track location of best move, e.g. in 94% of cases the best move is first, etc.
         let mut best_move_index = 0;
 
         for mv_index in 0..movegen.len {
@@ -197,10 +179,24 @@ impl Engine {
                 new_history,
             );
 
+            if score > best_score {
+                best_score = score;
+                best_move = Some(mv);
+                best_move_index = mv_index;
+
+                if score > alpha {
+                    alpha = score;
+                    if !capture {
+                        sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] +=
+                            depth as u32;
+                    }
+                }
+            }
+
             if score >= beta {
                 self.tt.set(TranspositionEntry {
                     key,
-                    value: beta,
+                    value: score,
                     depth,
                     node_type: NodeType::LowerBound,
                     best_move: Some(mv),
@@ -213,17 +209,7 @@ impl Engine {
                     sinfo.killers[0][ply as usize] = Some(mv);
                 }
 
-                return beta;
-            }
-
-            if score > alpha {
-                alpha = score;
-                best_move = Some(mv);
-                best_move_index = mv_index;
-                if !capture {
-                    sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] +=
-                        depth as u32;
-                }
+                return score;
             }
         }
 
@@ -274,7 +260,7 @@ impl Engine {
 
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
-        
+
         let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, None, true);
         match movegen.status() {
             BoardStatus::Ongoing => {}
