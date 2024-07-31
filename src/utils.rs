@@ -39,18 +39,20 @@ fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
         board = board.make_move_new(current_best);
     }
 
-    // let mut depth = 1;
-    loop {
+    let mut depth = 1;
+
+    // Have a hard cap on PV because run away may happen
+    for _ in 0..63 {
         let key = board.get_hash();
         let entry = tt.get(key);
 
-        // dbg!("Depth: {}, Key: {:x}, Valid: {}", depth, key, entry.is_valid(key));
-        if entry.is_valid(key) {
+        // dbg!("Depth: {}, Key: {:x}, Valid: {}, Entry: {}", depth, key, entry.is_valid(key), entry);
+        if entry.is_valid(key) && entry.depth >= depth {
             if let Some(mv) = entry.best_move {
                 // dbg!("  Found move: {}", mv);
                 pv.push(mv);
                 board = board.make_move_new(mv);
-                // depth += 1;
+                depth += 1;
             } else {
                 // dbg!("  No best move found");
                 break;

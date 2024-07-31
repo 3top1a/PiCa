@@ -8,7 +8,7 @@ all: build
 build:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) build --release
 
-run: build
+run:
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) run --release
 
 clean:
