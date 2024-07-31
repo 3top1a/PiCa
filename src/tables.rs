@@ -281,8 +281,14 @@ mod tests {
         let black_passed_mask = PASSED_PAWN_MASKS[1][black_pawn_square.to_index()];
         let white_overflow_mask = PASSED_PAWN_MASKS[0][white_overflow_test.to_index()];
 
-        assert_eq!(white_passed_mask, chess::BitBoard(4_051_049_677_989_085_184));
+        assert_eq!(
+            white_passed_mask,
+            chess::BitBoard(4_051_049_677_989_085_184)
+        );
         assert_eq!(black_passed_mask, chess::BitBoard(471_604_252));
-        assert_eq!(white_overflow_mask, chess::BitBoard(13_889_312_357_043_142_656));
+        assert_eq!(
+            white_overflow_mask,
+            chess::BitBoard(13_889_312_357_043_142_656)
+        );
     }
 }

@@ -5,8 +5,7 @@ use vampirc_uci::UciTimeControl;
 
 use crate::{engine::MAX_PLY, stats::NODES_SEARCHED};
 
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct TimeManager {
     pub max_depth: Option<u8>,
     pub min_depth: Option<u8>,
@@ -19,7 +18,8 @@ const ESTIMATE_TIME_BRANCHING_FACTOR: u32 = 8;
 
 impl TimeManager {
     // https://www.chessprogramming.org/Time_Management
-    #[must_use] pub fn can_continue_soft(
+    #[must_use]
+    pub fn can_continue_soft(
         &self,
         depth: u8,
         _board: Board,
@@ -43,26 +43,22 @@ impl TimeManager {
         let board_time = self.board_time.unwrap_or(300_000);
 
         // Normal board time
-        if ms > board_time / 30 {
+        if ms > board_time / 20 {
             return false;
         }
 
-        // Max allowed time
-        if let Some(max_allowed_time_now) = self.max_allowed_time_now {
-            if ms > max_allowed_time_now {
-                return false;
-            }
-        }
+        // removed because it makes more sense in hard stop
+        // // Max allowed time
+        // if let Some(max_allowed_time_now) = self.max_allowed_time_now {
+        //     if ms > max_allowed_time_now {
+        //         return false;
+        //     }
+        // }
 
         true
     }
 
-    pub fn can_continue_hard(
-        &self,
-        depth: u8,
-        _board: &Board,
-        start_of_search: Instant,
-    ) -> bool {
+    pub fn can_continue_hard(&self, depth: u8, _board: &Board, start_of_search: Instant) -> bool {
         // Check for max depth
         if depth > self.max_depth.unwrap_or(MAX_PLY) {
             // println!("fail hard max depth {}>{}", depth, self.max_depth.unwrap_or(MAX_PLY));
@@ -96,7 +92,8 @@ impl TimeManager {
         true
     }
 
-    #[must_use] pub fn from_uci(uci: &UciTimeControl, board: &Board) -> Self {
+    #[must_use]
+    pub fn from_uci(uci: &UciTimeControl, board: &Board) -> Self {
         match uci {
             UciTimeControl::Infinite => Self {
                 ..Default::default()
@@ -126,7 +123,8 @@ impl TimeManager {
         }
     }
 
-    #[must_use] pub fn test_preset() -> Self {
+    #[must_use]
+    pub fn test_preset() -> Self {
         Self {
             max_allowed_time_now: Some(5000),
             min_depth: Some(8),

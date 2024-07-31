@@ -32,7 +32,8 @@ impl Default for Engine {
 }
 
 impl Engine {
-    #[must_use] pub fn new(tt_size_mb: usize) -> Self {
+    #[must_use]
+    pub fn new(tt_size_mb: usize) -> Self {
         Self {
             tt: TT::new_with_size_mb(tt_size_mb),
             info: false,
@@ -62,7 +63,7 @@ impl Engine {
             let best_score = self.negamax(&board, -OO, OO, depth, 0, &mut sinfo, history, time);
 
             if best_score.abs() > 400000 {
-                println!("broke hard {}", best_score);
+                // println!("broke hard {}", best_score);
                 return best_mv.expect("unable to find best move");
             }
 
@@ -185,6 +186,7 @@ impl Engine {
 
             let new_board = board.make_move_new(mv);
             let new_history: History = history.push_hist_new(new_board.get_hash());
+
             let score = -self.negamax(
                 &new_board,
                 -beta,
@@ -193,7 +195,7 @@ impl Engine {
                 ply + 1,
                 sinfo,
                 new_history,
-                time
+                time,
             );
 
             if score.abs() > 400000 {

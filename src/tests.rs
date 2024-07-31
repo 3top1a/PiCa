@@ -34,9 +34,14 @@ mod test {
                     chess::BoardStatus::Ongoing => {}
                 }
 
-                let mv = self
-                    .eng
-                    .start(self.board, &TimeManager{max_allowed_time_now: Some(2500), ..Default::default()}, History::new());
+                let mv = self.eng.start(
+                    self.board,
+                    &TimeManager {
+                        max_allowed_time_now: Some(2500),
+                        ..Default::default()
+                    },
+                    History::new(),
+                );
                 println!("{} {}", mv, self.board);
                 self.board = self.board.make_move_new(mv);
             }

@@ -24,7 +24,8 @@ impl Default for SearchInfo {
 }
 
 impl SearchInfo {
-    #[must_use] pub fn new(start: Instant) -> Self {
+    #[must_use]
+    pub fn new(start: Instant) -> Self {
         Self {
             killers: [[None; MAX_PLY as usize + 1]; 2],
             history: [[0; 64]; 64],
@@ -82,7 +83,8 @@ pub struct MoveGenOrdered {
 }
 
 impl MoveGenOrdered {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         board: &Board,
         sinfo: &SearchInfo,
         ply: u8,
@@ -121,7 +123,8 @@ impl MoveGenOrdered {
         }
     }
 
-    #[must_use] pub fn status(&self) -> BoardStatus {
+    #[must_use]
+    pub fn status(&self) -> BoardStatus {
         match self.real_len {
             0 => {
                 if self.board_checkers == 0 {
@@ -272,7 +275,8 @@ impl Default for History {
 }
 
 impl History {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             history: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         }
@@ -289,14 +293,16 @@ impl History {
         self.history[self.history.len() - 1] = new_key;
     }
 
-    #[must_use] pub fn push_hist_new(&self, new_key: u64) -> Self {
+    #[must_use]
+    pub fn push_hist_new(&self, new_key: u64) -> Self {
         let mut newhist = *self;
         newhist.history.copy_within(1.., 0);
         newhist.history[self.history.len() - 1] = new_key;
         newhist
     }
 
-    #[must_use] pub fn is_three_rep(&self) -> bool {
+    #[must_use]
+    pub fn is_three_rep(&self) -> bool {
         let newest: u64 = self.history[self.history.len() - 1];
         let mut reps = 0u8;
 
@@ -311,6 +317,7 @@ impl History {
 mod tests {
     #[test]
     // 1r4k1/pr1n3p/5np1/4p3/4P3/1P3PP1/5BB1/K1R3NR b - - 0 31
+    // TODO more tests
     fn test_three_rep() {
         use crate::utils::History;
         use chess::{Board, ChessMove};

@@ -1,13 +1,11 @@
 In order of importance:
 
-[ ] Time management
 [ ] move ordering tuning
 [ ] https://www.chessprogramming.org/Mate_Distance_Pruning
 [ ] https://www.chessprogramming.org/Principal_Variation_Search#PVS_and_NegaScout
 [ ] https://www.chessprogramming.org/Mobility
 [ ] cozy chess
 [ ] mobility
-[ ] king dist eval
 [ ] One more pruning technique
 [ ] Make it respond to `stop` and actually respect time management more
 [ ] Meta analysis
@@ -16,6 +14,8 @@ In order of importance:
     [ ] More idiomatic rust
     [ ] Makefile with native cpu arg
 [ ] Try some another cache/table
+    [ ] Pawn eval cache
+        [ ] More pawn eval stuff prob
 [ ] Chess960 support?
 [ ] MCTS?
     [ ] Parallel MCTS?
@@ -26,3 +26,5 @@ Done:
 [x] https://github.com/kz04px/swizzles/tree/master/src/tests/search
 [x] Unfuckup search
 [x] uProf
+[x] Time management
+[x] king dist eval

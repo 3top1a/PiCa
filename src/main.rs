@@ -30,12 +30,12 @@ fn main() {
     };
     let mut hist = History::new();
 
-    // Check if args contain `--bench` and if so, search do a depth of 8
+    // Check if args contain `--bench` and if so, search do a depth of 9
     if args().any(|x| x.contains("--bench")) {
         eng.start(
             Board::default(),
             &TimeManager {
-                max_depth: Some(8),
+                min_depth: Some(9),
                 ..Default::default()
             },
             hist,
@@ -121,7 +121,10 @@ fn main() {
             } => {
                 let tc = match time_control {
                     Some(x) => TimeManager::from_uci(&x, &board),
-                    None => TimeManager{max_allowed_time_now: Some(2500), ..Default::default()},
+                    None => TimeManager {
+                        max_allowed_time_now: Some(2500),
+                        ..Default::default()
+                    },
                 };
 
                 let mv = eng.start(board, &tc, hist);

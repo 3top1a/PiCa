@@ -14,7 +14,8 @@ const TEMPO_BONUS: i32 = 10;
 /// # Panics
 /// on debug asserts becasue I mucked up the code
 #[inline(never)] // for profiling
-#[must_use] pub fn eval(board: &Board) -> i32 {
+#[must_use]
+pub fn eval(board: &Board) -> i32 {
     let who2move = match board.side_to_move() {
         White => 1,
         Black => -1,
