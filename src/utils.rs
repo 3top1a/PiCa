@@ -14,19 +14,21 @@ use crate::{
 pub struct SearchInfo {
     pub killers: [[Option<ChessMove>; MAX_PLY as usize + 1]; 2],
     pub history: [[u32; 64]; 64],
+    pub start: Instant,
 }
 
 impl Default for SearchInfo {
     fn default() -> Self {
-        Self::new()
+        Self::new(Instant::now())
     }
 }
 
 impl SearchInfo {
-    #[must_use] pub fn new() -> Self {
+    #[must_use] pub fn new(start: Instant) -> Self {
         Self {
             killers: [[None; MAX_PLY as usize + 1]; 2],
             history: [[0; 64]; 64],
+            start,
         }
     }
 }

@@ -46,10 +46,10 @@ impl Engine {
 
         let mut best_mv = None;
 
-        let mut sinfo = SearchInfo::new();
+        let mut sinfo = SearchInfo::default();
 
         for depth in 1..MAX_PLY {
-            if !time.can_continue(
+            if !time.can_continue_soft(
                 depth,
                 board,
                 unsafe { NODES_SEARCHED },
@@ -59,7 +59,12 @@ impl Engine {
             }
 
             stats::reset();
-            let best_score = self.negamax(&board, -OO, OO, depth, 0, &mut sinfo, history);
+            let best_score = self.negamax(&board, -OO, OO, depth, 0, &mut sinfo, history, time);
+
+            if best_score.abs() > 400000 {
+                println!("broke hard {}", best_score);
+                return best_mv.expect("unable to find best move");
+            }
 
             best_mv = self.tt.get(board.get_hash()).best_move;
 
@@ -96,8 +101,13 @@ impl Engine {
         ply: u8,
         sinfo: &mut SearchInfo,
         history: History,
+        time: &TimeManager,
     ) -> i32 {
         bump!(NODES_SEARCHED);
+
+        if !time.can_continue_hard(depth, board, sinfo.start) {
+            return -5000000;
+        }
 
         // Check extension
         let in_check = board.checkers().0 > 0;
@@ -109,7 +119,7 @@ impl Engine {
         }
 
         if history.is_three_rep() {
-            return -OO;
+            return -OO + ply as i32;
         }
 
         // Check TT
@@ -183,7 +193,12 @@ impl Engine {
                 ply + 1,
                 sinfo,
                 new_history,
+                time
             );
+
+            if score.abs() > 400000 {
+                return -5000000;
+            }
 
             if score > best_score {
                 best_score = score;
