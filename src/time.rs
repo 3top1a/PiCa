@@ -55,16 +55,11 @@ impl TimeManager {
     #[must_use] pub fn from_uci(uci: &UciTimeControl, board: &Board) -> Self {
         match uci {
             UciTimeControl::Infinite => Self {
-                max_depth: None,
-                _max_nodes: None,
-                board_time: None,
-                max_allowed_time_now: None,
+                ..Default::default()
             },
             UciTimeControl::MoveTime(x) => Self {
-                max_depth: None,
-                _max_nodes: None,
-                board_time: None,
                 max_allowed_time_now: Some(x.num_milliseconds() as u32),
+                ..Default::default()
             },
             UciTimeControl::Ponder => todo!("podner not implemented yet"),
             UciTimeControl::TimeLeft {
@@ -81,9 +76,7 @@ impl TimeManager {
 
                 Self {
                     board_time: time.map(|x| x.num_milliseconds() as u32),
-                    max_allowed_time_now: None,
-                    max_depth: None,
-                    _max_nodes: None,
+                    ..Default::default()
                 }
             }
         }
@@ -91,10 +84,8 @@ impl TimeManager {
 
     #[must_use] pub fn test_preset() -> Self {
         Self {
-            board_time: None,
             max_allowed_time_now: Some(5000),
-            max_depth: None,
-            _max_nodes: None,
+            ..Default::default()
         }
     }
 }
