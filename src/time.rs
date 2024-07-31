@@ -9,6 +9,7 @@ use crate::engine::MAX_PLY;
 #[derive(Default)]
 pub struct TimeManager {
     pub max_depth: Option<u8>,
+    pub min_depth: Option<u8>,
     pub _max_nodes: Option<u64>,
     pub board_time: Option<u32>,
     pub max_allowed_time_now: Option<u32>,
@@ -26,6 +27,12 @@ impl TimeManager {
     ) -> bool {
         // TODO Yeet this HACK
         let estimate_time_branching_factor = 12;
+
+        // Check for minimum depth
+        // Useful for CI/CD because the CPUs are slow
+        if depth < self.min_depth.unwrap_or(0) {
+            return true;
+        }
 
         // Check for max depth
         if depth > self.max_depth.unwrap_or(MAX_PLY) {
@@ -85,6 +92,7 @@ impl TimeManager {
     #[must_use] pub fn test_preset() -> Self {
         Self {
             max_allowed_time_now: Some(5000),
+            min_depth: Some(8),
             ..Default::default()
         }
     }

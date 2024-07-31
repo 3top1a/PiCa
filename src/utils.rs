@@ -5,7 +5,7 @@ use arrayvec::ArrayVec;
 use chess::{BitBoard, Board, BoardStatus, ChessMove, MoveGen, Piece};
 
 use crate::{
-    engine::MAX_PLY,
+    engine::{MAX_PLY, OO},
     stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
     tt::TT,
 };
@@ -250,6 +250,11 @@ fn score_move(
 
 //     b.cmp(&a)
 // }
+
+const MATE_SCORE: i32 = OO - u8::MAX as i32;
+pub const fn is_mate_score(score: i32) -> bool {
+    score >= MATE_SCORE || score <= -MATE_SCORE
+}
 
 /// Persistent data between games
 #[derive(Debug, Clone, Copy)]

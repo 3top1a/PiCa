@@ -10,7 +10,7 @@ use crate::{
     },
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
-    utils::{log_search_statistics, History, MoveGenOrdered, SearchInfo},
+    utils::{is_mate_score, log_search_statistics, History, MoveGenOrdered, SearchInfo},
 };
 
 pub const OO: i32 = 10000;
@@ -48,8 +48,6 @@ impl Engine {
 
         let mut sinfo = SearchInfo::new();
 
-        // keep track of the number of nodes last ply, if it doesn't change with another iteration we are screwed anyways
-        let mut nodes_last_ply = 0;
         for depth in 1..MAX_PLY {
             if !time.can_continue(
                 depth,
@@ -77,14 +75,10 @@ impl Engine {
                 );
             }
 
-            // TODO replace with mate checking and early return
-            if nodes_last_ply == unsafe { NODES_SEARCHED } && depth > 12 {
-                println!(
-                    "debug No change in searched nodes despite larger search depth, exiting early"
-                );
-                break;
+            // return early if mate is found
+            if is_mate_score(best_score) {
+                return best_mv.unwrap();
             }
-            nodes_last_ply = unsafe { NODES_SEARCHED };
         }
 
         best_mv.expect("unable to find best move")
@@ -126,17 +120,29 @@ impl Engine {
         bump!(TT_CHECK);
         if entry.is_valid(key) && entry.depth >= depth {
             bump!(TT_HIT);
+
+            // Correct entry scores
+            let entry_value = if is_mate_score(entry.value) {
+                if entry.value > 0 {
+                    OO - (OO - entry.value) - ply as i32
+                } else {
+                    -OO + (entry.value + OO) + ply as i32
+                }
+            } else {
+                entry.value
+            };
+
             tt_move = entry.best_move;
             match entry.node_type {
-                NodeType::Exact => return entry.value,
+                NodeType::Exact => return entry_value,
                 NodeType::LowerBound => {
-                    if entry.value >= beta {
-                        return entry.value;
+                    if entry_value >= beta {
+                        return entry_value;
                     }
                 }
                 NodeType::UpperBound => {
-                    if entry.value <= alpha {
-                        return entry.value;
+                    if entry_value <= alpha {
+                        return entry_value;
                     }
                 }
                 NodeType::Default => unreachable!(),

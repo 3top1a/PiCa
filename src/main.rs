@@ -121,7 +121,7 @@ fn main() {
             } => {
                 let tc = match time_control {
                     Some(x) => TimeManager::from_uci(&x, &board),
-                    None => TimeManager::test_preset(),
+                    None => TimeManager{max_allowed_time_now: Some(2500), ..Default::default()},
                 };
 
                 let mv = eng.start(board, &tc, hist);

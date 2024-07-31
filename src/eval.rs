@@ -85,7 +85,8 @@ const TEMPO_BONUS: i32 = 10;
     }
 
     // King distance
-    /*let white_king_sq = board.king_square(White);
+    // Critical for CI/CD because they do not find good endgame moves with those weak cpus
+    let white_king_sq = board.king_square(White);
     let black_king_sq = board.king_square(Black);
     let a = white_king_sq
         .get_file()
@@ -97,7 +98,7 @@ const TEMPO_BONUS: i32 = 10;
         .abs_diff(black_king_sq.get_rank().to_index()) as i32;
     let d = a * a + b * b;
     eg_sc -= d;
-    mg_sc += d;*/
+    mg_sc += d;
 
     // Tempo bonus I guess
     // From https://www.chessprogramming.org/Tempo:

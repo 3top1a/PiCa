@@ -36,7 +36,7 @@ mod test {
 
                 let mv = self
                     .eng
-                    .start(self.board, &TimeManager::test_preset(), History::new());
+                    .start(self.board, &TimeManager{max_allowed_time_now: Some(2500), ..Default::default()}, History::new());
                 println!("{} {}", mv, self.board);
                 self.board = self.board.make_move_new(mv);
             }
@@ -54,7 +54,7 @@ mod test {
         ($fen:expr, $move:expr) => {
             use crate::tt::TT;
             use chess::ChessMove;
-            let board = Board::from_str($fen).unwrap();
+            let board = Board::from_str($fen.trim()).unwrap();
             let mv = Engine {
                 tt: TT::new_with_size_mb(256),
                 info: true,
@@ -67,6 +67,7 @@ mod test {
                 "{}",
                 format!("FEN: {}", board)
             );
+            println!();
         };
     }
 
@@ -74,7 +75,7 @@ mod test {
         ($fen:expr, $move:expr) => {
             use crate::tt::TT;
             use chess::ChessMove;
-            let board = Board::from_str($fen).unwrap();
+            let board = Board::from_str($fen.trim()).unwrap();
             let mv = Engine {
                 tt: TT::new_with_size_mb(256),
                 info: true,
@@ -87,6 +88,7 @@ mod test {
                 "{}",
                 format!("FEN: {}", board)
             );
+            println!();
         };
     }
 
@@ -141,9 +143,14 @@ mod test {
     /// <https://www.stmintz.com/ccc/index.php?id=476109>
     fn endgames() {
         // https://www.stmintz.com/ccc/index.php?id=391553
+
+        // NOTE:
+        // 1k6/7R/2K5/8/8/8/8/8 w - - bm Rh1
+        // mayb also be h8, it's mate in three anyways
+
         let positions = "3k4/8/4K3/2R5/8/8/8/8 w - - bm Rc1
     4k3/8/4K3/8/8/8/2R5/8 w - - 2 2 bm Rc8
-    1k6/7R/2K5/8/8/8/8/8 w - - bm Rh8
+    1k6/7R/2K5/8/8/8/8/8 w - - bm Rh1
     8/3k4/8/8/3PK3/8/8/8 w - - bm Kd5
     2k5/8/1K1P4/8/8/8/8/8 w - - bm Kc6"
             .lines();
