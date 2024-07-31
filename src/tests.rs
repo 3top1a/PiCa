@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_macros)]
-mod tests {
-    use crate::*;
+mod test {
+    use crate::{Board, Engine, FromStr, History, TimeManager};
     use chess::Color;
 
     /// A chess engine arena, where two of the same engine battle it out
@@ -12,7 +12,7 @@ mod tests {
     }
 
     impl Arena {
-        pub fn new(fen: String, winningside: Color) -> Self {
+        pub fn new(fen: &str, winningside: Color) -> Self {
             Self {
                 board: Board::from_str(&fen).unwrap(),
                 eng: Engine::new(128),
@@ -27,7 +27,7 @@ mod tests {
                     chess::BoardStatus::Checkmate => {
                         // Check mate (soory)
                         assert_eq!(!self.board.side_to_move(), self.winningside);
-                        println!("Took {} moves", moves);
+                        println!("Took {moves} moves");
                         return;
                     }
                     chess::BoardStatus::Stalemate => panic!(),
@@ -36,7 +36,7 @@ mod tests {
 
                 let mv = self
                     .eng
-                    .start(self.board, TimeManager::test_preset(), History::new());
+                    .start(self.board, &TimeManager::test_preset(), History::new());
                 println!("{} {}", mv, self.board);
                 self.board = self.board.make_move_new(mv);
             }
@@ -45,9 +45,9 @@ mod tests {
 
     #[test]
     fn test_arena() {
-        let _ = Arena::new("5K1k/5Q2/8/8/8/8/8/8 w - - 0 1".to_string(), Color::White).start();
-        let _ = Arena::new("5k2/7K/5q2/8/8/8/8/8 b - - 1 1".to_string(), Color::Black).start();
-        let _ = Arena::new("8/5k2/8/8/8/2K5/4Q3/8 w - - 0 1".to_string(), Color::White).start();
+        let () = Arena::new("5K1k/5Q2/8/8/8/8/8/8 w - - 0 1", Color::White).start();
+        let () = Arena::new("5k2/7K/5q2/8/8/8/8/8 b - - 1 1", Color::Black).start();
+        let () = Arena::new("8/5k2/8/8/8/2K5/4Q3/8 w - - 0 1", Color::White).start();
     }
 
     macro_rules! nextmoveassert_san {
@@ -59,7 +59,7 @@ mod tests {
                 tt: TT::new_with_size_mb(256),
                 info: true,
             }
-            .start(board, TimeManager::test_preset(), History::new());
+            .start(board, &TimeManager::test_preset(), History::new());
             let bestmv = ChessMove::from_san(&board, $move).unwrap();
             assert_eq!(
                 mv.to_string(),
@@ -79,7 +79,7 @@ mod tests {
                 tt: TT::new_with_size_mb(256),
                 info: true,
             }
-            .start(board, TimeManager::test_preset(), History::new());
+            .start(board, &TimeManager::test_preset(), History::new());
             let bestmv = ChessMove::from_str($move).unwrap();
             assert_eq!(
                 mv.to_string(),
@@ -102,7 +102,7 @@ mod tests {
     // https://groups.google.com/g/rec.games.chess.misc/c/OeK0k5KDaf4
 
     /// Bratko Kopec Test
-    /// https://www.chessprogramming.org/Bratko-Kopec_Test
+    /// <https://www.chessprogramming.org/Bratko-Kopec_Test>
     /*#[test]
     fn bratko_kopec() {
         let positions = "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - bm Qd1+;
@@ -138,7 +138,7 @@ mod tests {
     }*/
 
     #[test]
-    /// https://www.stmintz.com/ccc/index.php?id=476109
+    /// <https://www.stmintz.com/ccc/index.php?id=476109>
     fn endgames() {
         // https://www.stmintz.com/ccc/index.php?id=391553
         let positions = "3k4/8/4K3/2R5/8/8/8/8 w - - bm Rc1

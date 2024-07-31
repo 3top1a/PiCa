@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use chess::{Board, BoardStatus, ChessMove, MoveGen};
+use chess::{Board, BoardStatus, ChessMove};
 
 use crate::{
     bump,
@@ -10,7 +10,7 @@ use crate::{
     },
     time::TimeManager,
     tt::{NodeType, TranspositionEntry, TT},
-    utils::{log_search_statistics, sort_moves, History, MoveGenOrdered, SearchInfo},
+    utils::{log_search_statistics, History, MoveGenOrdered, SearchInfo},
 };
 
 pub const OO: i32 = 10000;
@@ -32,7 +32,7 @@ impl Default for Engine {
 }
 
 impl Engine {
-    pub fn new(tt_size_mb: usize) -> Self {
+    #[must_use] pub fn new(tt_size_mb: usize) -> Self {
         Self {
             tt: TT::new_with_size_mb(tt_size_mb),
             info: false,
@@ -40,7 +40,7 @@ impl Engine {
     }
 
     /// Start a new search
-    pub fn start(&mut self, board: Board, time: TimeManager, history: History) -> ChessMove {
+    pub fn start(&mut self, board: Board, time: &TimeManager, history: History) -> ChessMove {
         stats::reset();
         let start_of_search_instant = Instant::now();
 
@@ -73,7 +73,7 @@ impl Engine {
                     &sinfo,
                     &board,
                     &self.tt,
-                    &best_mv,
+                    best_mv,
                 );
             }
 
@@ -91,8 +91,8 @@ impl Engine {
     }
 
     /// Starts a recursive negamax loop
-    /// https://www.chessprogramming.org/Negamax
-    /// https://www.chessprogramming.org/Alpha-Beta
+    /// <https://www.chessprogramming.org/Negamax>
+    /// <https://www.chessprogramming.org/Alpha-Beta>
     fn negamax(
         &mut self,
         board: &Board,
@@ -111,7 +111,7 @@ impl Engine {
         // QSearch to avoid Horizon effect
         // TODO Try not allowing qsearch if in check
         if (depth == 0 && !in_check) || ply > MAX_PLY {
-            return self.qsearch(board, alpha, beta, &sinfo, ply);
+            return self.qsearch(board, alpha, beta, sinfo, ply);
         }
 
         if history.is_three_rep() {
@@ -143,10 +143,10 @@ impl Engine {
             }
         }
 
-        let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, tt_move, false);
+        let mut movegen = MoveGenOrdered::new(board, sinfo, ply, tt_move, false);
         match movegen.status() {
             chess::BoardStatus::Ongoing => {}
-            chess::BoardStatus::Checkmate => return -OO + ply as i32,
+            chess::BoardStatus::Checkmate => return -OO + i32::from(ply),
             chess::BoardStatus::Stalemate => return 0,
         }
 
@@ -155,7 +155,7 @@ impl Engine {
         // Also avoid flooding the stack by limiting it
         if in_check && ply < MAX_PLY / 2 {
             bump!(CHECK_EXTENSION);
-            depth += 1
+            depth += 1;
         };
 
         let mut best_move = None;
@@ -188,7 +188,7 @@ impl Engine {
                     alpha = score;
                     if !capture {
                         sinfo.history[mv.get_source().to_index()][mv.get_dest().to_index()] +=
-                            depth as u32;
+                            u32::from(depth);
                     }
                 }
             }
@@ -235,7 +235,7 @@ impl Engine {
     }
 
     /// Quiescence Search
-    /// https://www.chessprogramming.org/Quiescence_Search
+    /// <https://www.chessprogramming.org/Quiescence_Search>
     fn qsearch(
         &self,
         board: &Board,
@@ -261,10 +261,10 @@ impl Engine {
         // TODO Add optional TT probing in qsearch
         // https://www.talkchess.com/forum/viewtopic.php?t=47373
 
-        let mut movegen = MoveGenOrdered::new(board, &sinfo, &ply, None, true);
+        let mut movegen = MoveGenOrdered::new(board, sinfo, ply, None, true);
         match movegen.status() {
             BoardStatus::Ongoing => {}
-            BoardStatus::Checkmate => return -OO + ply as i32,
+            BoardStatus::Checkmate => return -OO + i32::from(ply),
             BoardStatus::Stalemate => return 0,
         }
 

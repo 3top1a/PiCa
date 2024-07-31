@@ -6,7 +6,8 @@ use chess::{BitBoard, Board, BoardStatus, ChessMove, MoveGen, Piece};
 
 use crate::{
     engine::MAX_PLY,
-    stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT}, tt::TT,
+    stats::{CHECK_EXTENSION, NODES_SEARCHED, QNODES_SEARCHED, TT_CHECK, TT_HIT},
+    tt::TT,
 };
 
 #[derive(Debug)]
@@ -15,8 +16,14 @@ pub struct SearchInfo {
     pub history: [[u32; 64]; 64],
 }
 
+impl Default for SearchInfo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SearchInfo {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             killers: [[None; MAX_PLY as usize + 1]; 2],
             history: [[0; 64]; 64],
@@ -25,7 +32,7 @@ impl SearchInfo {
 }
 
 fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
-    let mut board = board.clone();
+    let mut board = *board;
     let mut pv = Vec::with_capacity(64);
     if let Some(current_best) = current_best {
         pv.push(current_best);
@@ -56,7 +63,7 @@ fn printpv(tt: &TT, board: &Board, current_best: Option<ChessMove>) -> String {
 
     // dbg!("Total PV length: {}", pv.len());
     pv.iter()
-        .map(|x| x.to_string())
+        .map(std::string::ToString::to_string)
         .collect::<Vec<String>>()
         .join(" ")
 }
@@ -71,7 +78,13 @@ pub struct MoveGenOrdered {
 }
 
 impl MoveGenOrdered {
-    pub fn new(board: &Board, sinfo: &SearchInfo, ply: &u8, tt_move: Option<ChessMove>, caponly: bool) -> Self {
+    #[must_use] pub fn new(
+        board: &Board,
+        sinfo: &SearchInfo,
+        ply: u8,
+        tt_move: Option<ChessMove>,
+        caponly: bool,
+    ) -> Self {
         let mut moves = ArrayVec::new();
 
         let movegen = MoveGen::new_legal(board);
@@ -89,7 +102,7 @@ impl MoveGenOrdered {
 
         for mv in movegen {
             if (BitBoard::from_square(mv.get_dest()) & targets).0 != 0 {
-                let score = score_move(mv, board, sinfo, *ply, tt_move);
+                let score = score_move(mv, board, sinfo, ply, tt_move);
                 moves.push((mv, score as i32));
             }
 
@@ -104,7 +117,7 @@ impl MoveGenOrdered {
         }
     }
 
-    pub fn status(&self) -> BoardStatus{
+    #[must_use] pub fn status(&self) -> BoardStatus {
         match self.real_len {
             0 => {
                 if self.board_checkers == 0 {
@@ -144,7 +157,7 @@ pub fn log_search_statistics(
     _sinfo: &SearchInfo,
     board: &Board,
     tt: &TT,
-    bestmv: &Option<ChessMove>
+    bestmv: Option<ChessMove>,
 ) {
     /*let who2move = match board.side_to_move() {
         chess::Color::White => 1,
@@ -155,11 +168,11 @@ pub fn log_search_statistics(
         println!(
             "info score cp {} depth {depth} nodes {NODES_SEARCHED} qnodes {QNODES_SEARCHED} time {time} pv {}",
             best_score,
-            printpv(tt, board, *bestmv),
+            printpv(tt, board, bestmv),
         );
         println!(
             "info string checkexts {CHECK_EXTENSION} EBR {} TT Check {TT_CHECK} hit {TT_HIT} nps {:.0}",
-            (NODES_SEARCHED as f32).powf(1. / depth as f32),
+            (NODES_SEARCHED as f64).powf(1. / f64::from(depth)),
             (1000 * NODES_SEARCHED as u128) / (time + 1)
         );
     }
@@ -177,7 +190,7 @@ pub const MVV_LVA: [[u8; chess::NUM_PIECES + 1]; chess::NUM_PIECES + 1] = [
 
 // TODO Remove this function and reorded table
 fn piece_to_index(a: Option<Piece>) -> usize {
-    return a.map_or(0, |a| a.to_index() + 1);
+    a.map_or(0, |a| a.to_index() + 1)
 }
 
 // TODO Tune this
@@ -199,7 +212,7 @@ fn score_move(
     let attacker = piece_to_index(b.piece_on(mv.get_source()));
     let victim = piece_to_index(b.piece_on(mv.get_dest()));
 
-    let mvv_lva = MVV_LVA[victim][attacker] as u32;
+    let mvv_lva = u32::from(MVV_LVA[victim][attacker]);
 
     // If it's a capture, return MVV-LVA score
     if mvv_lva > 0 {
@@ -222,19 +235,19 @@ fn score_move(
     mvv_lva
 }
 
-pub fn sort_moves(
-    a: ChessMove,
-    b: ChessMove,
-    board: &Board,
-    sinfo: &SearchInfo,
-    ply: u8,
-    hash: Option<ChessMove>,
-) -> core::cmp::Ordering {
-    let a = score_move(a, board, sinfo, ply, hash);
-    let b = score_move(b, board, sinfo, ply, hash);
+// #[must_use] pub fn sort_moves(
+//     a: ChessMove,
+//     b: ChessMove,
+//     board: &Board,
+//     sinfo: &SearchInfo,
+//     ply: u8,
+//     hash: Option<ChessMove>,
+// ) -> core::cmp::Ordering {
+//     let a = score_move(a, board, sinfo, ply, hash);
+//     let b = score_move(b, board, sinfo, ply, hash);
 
-    b.cmp(&a)
-}
+//     b.cmp(&a)
+// }
 
 /// Persistent data between games
 #[derive(Debug, Clone, Copy)]
@@ -243,11 +256,17 @@ pub struct History {
     history: [u64; 9],
 }
 
+impl Default for History {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl History {
-    pub fn new() -> Self {
-        return Self {
+    #[must_use] pub fn new() -> Self {
+        Self {
             history: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        };
+        }
     }
 
     pub fn push_hist(&mut self, new_key: u64) {
@@ -261,19 +280,19 @@ impl History {
         self.history[self.history.len() - 1] = new_key;
     }
 
-    pub fn push_hist_new(&self, new_key: u64) -> Self {
-        let mut newhist = self.clone();
+    #[must_use] pub fn push_hist_new(&self, new_key: u64) -> Self {
+        let mut newhist = *self;
         newhist.history.copy_within(1.., 0);
         newhist.history[self.history.len() - 1] = new_key;
-        return newhist;
+        newhist
     }
 
-    pub fn is_three_rep(&self) -> bool {
+    #[must_use] pub fn is_three_rep(&self) -> bool {
         let newest: u64 = self.history[self.history.len() - 1];
         let mut reps = 0u8;
 
         for i in 0..self.history.len() {
-            reps += (newest == self.history[i]) as u8;
+            reps += u8::from(newest == self.history[i]);
         }
 
         reps >= 3

@@ -32,7 +32,14 @@ fn main() {
 
     // Check if args contain `--bench` and if so, search do a depth of 8
     if args().any(|x| x.contains("--bench")) {
-        eng.start(Board::default(), TimeManager{max_depth: Some(8), ..Default::default()}, hist);
+        eng.start(
+            Board::default(),
+            &TimeManager {
+                max_depth: Some(8),
+                ..Default::default()
+            },
+            hist,
+        );
         return;
     }
 
@@ -81,7 +88,7 @@ fn main() {
                         _ => eprintln!("> Invalid name!"),
                     }
                 } else {
-                    eprintln!("> No value recieved!")
+                    eprintln!("> No value recieved!");
                 }
 
                 // Reset engine
@@ -113,11 +120,11 @@ fn main() {
                 search_control: _,
             } => {
                 let tc = match time_control {
-                    Some(x) => TimeManager::from_uci(x, &board),
+                    Some(x) => TimeManager::from_uci(&x, &board),
                     None => TimeManager::test_preset(),
                 };
 
-                let mv = eng.start(board, tc, hist);
+                let mv = eng.start(board, &tc, hist);
                 println!("bestmove {mv}");
             }
             UciMessage::Quit => {

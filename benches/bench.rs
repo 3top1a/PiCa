@@ -9,7 +9,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             let mut e = Engine::new(64);
             e.start(
                 Board::default(),
-                TimeManager {
+                &TimeManager {
                     max_depth: Some(5),
                     _max_nodes: None,
                     board_time: None,
@@ -17,7 +17,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 },
                 History::new(),
             );
-        })
+        });
     });
 }
 

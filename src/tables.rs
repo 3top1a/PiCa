@@ -1,7 +1,6 @@
 use chess::{BitBoard, File, Rank, Square};
-use lazy_static::lazy_static;
 use const_for::const_for;
-
+use lazy_static::lazy_static;
 
 const MG_VALUE: [i32; 6] = [82, 337, 365, 477, 1025, 0];
 const EG_VALUE: [i32; 6] = [94, 281, 297, 512, 936, 0];
@@ -272,8 +271,8 @@ lazy_static! {
 mod tests {
     #[test]
     fn test_passed_pawn_mask() {
-        use chess::Square;
         use super::PASSED_PAWN_MASKS;
+        use chess::Square;
         let white_pawn_square = Square::E4;
         let black_pawn_square = Square::D5;
         let white_overflow_test = Square::H5;
@@ -282,8 +281,8 @@ mod tests {
         let black_passed_mask = PASSED_PAWN_MASKS[1][black_pawn_square.to_index()];
         let white_overflow_mask = PASSED_PAWN_MASKS[0][white_overflow_test.to_index()];
 
-        assert_eq!(white_passed_mask, chess::BitBoard(4051049677989085184));
-        assert_eq!(black_passed_mask, chess::BitBoard(471604252));
-        assert_eq!(white_overflow_mask, chess::BitBoard(13889312357043142656));
+        assert_eq!(white_passed_mask, chess::BitBoard(4_051_049_677_989_085_184));
+        assert_eq!(black_passed_mask, chess::BitBoard(471_604_252));
+        assert_eq!(white_overflow_mask, chess::BitBoard(13_889_312_357_043_142_656));
     }
 }

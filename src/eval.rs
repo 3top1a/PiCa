@@ -11,8 +11,10 @@ const ISOLATED_PAWN_PENALTY: i32 = -20;
 const TEMPO_BONUS: i32 = 10;
 
 /// Evaluation function.
+/// # Panics
+/// on debug asserts becasue I mucked up the code
 #[inline(never)] // for profiling
-pub fn eval(board: &Board) -> i32 {
+#[must_use] pub fn eval(board: &Board) -> i32 {
     let who2move = match board.side_to_move() {
         White => 1,
         Black => -1,
@@ -47,7 +49,7 @@ pub fn eval(board: &Board) -> i32 {
     // TODO cache table
     for square in *board.pieces(Piece::Pawn) {
         let color = board.color_on(square).unwrap();
-        let color_mul = (color == White) as i32 * 2 - 1;
+        let color_mul = i32::from(color == White) * 2 - 1;
         let file = square.get_file().to_index();
         let rank = square.get_rank().to_index();
 
@@ -57,8 +59,8 @@ pub fn eval(board: &Board) -> i32 {
         };
 
         let front_mask = match color {
-            White => chess::BitBoard::new(0x101010101010101 << square.to_index()),
-            Black => chess::BitBoard::new(0x101010101010101 >> (63 - square.to_index())),
+            White => chess::BitBoard::new(0x0101_0101_0101_0101 << square.to_index()),
+            Black => chess::BitBoard::new(0x0101_0101_0101_0101 >> (63 - square.to_index())),
         } ^ BitBoard::from_square(square);
 
         if (board.color_combined(!color) & passed_mask == EMPTY)

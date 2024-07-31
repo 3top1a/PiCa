@@ -47,7 +47,7 @@ pub struct TT {
 impl TT {
     /// Create a new Transposition Table with a said size in MiB
     pub fn new_with_size_mb(mb: usize) -> Self {
-        let n_entries = mb * 1048576 / 16;
+        let n_entries = mb * 1_048_576 / 16;
 
         Self {
             t: CacheTable::new(n_entries, TranspositionEntry::default()),
@@ -90,6 +90,6 @@ mod test {
 
         assert_eq!(t.get(a.key), a);
         assert_eq!(t.get(a.key).best_move, a.best_move);
-        assert!(t.get(a.key).is_valid(a.key))
+        assert!(t.get(a.key).is_valid(a.key));
     }
 }

@@ -6,6 +6,7 @@ use vampirc_uci::UciTimeControl;
 use crate::engine::MAX_PLY;
 
 #[derive(Debug)]
+#[derive(Default)]
 pub struct TimeManager {
     pub max_depth: Option<u8>,
     pub _max_nodes: Option<u64>,
@@ -13,20 +14,10 @@ pub struct TimeManager {
     pub max_allowed_time_now: Option<u32>,
 }
 
-impl Default for TimeManager {
-    fn default() -> Self {
-        Self {
-            board_time: None,
-            max_allowed_time_now: None,
-            max_depth: None,
-            _max_nodes: None,
-        }
-    }
-}
 
 impl TimeManager {
     // https://www.chessprogramming.org/Time_Management
-    pub fn can_continue(
+    #[must_use] pub fn can_continue(
         &self,
         depth: u8,
         _board: Board,
@@ -44,7 +35,7 @@ impl TimeManager {
         let time_ms = Instant::now();
         let ms = time_ms.duration_since(start_of_search).as_millis() as u32
             * estimate_time_branching_factor;
-        let board_time = self.board_time.unwrap_or(300000);
+        let board_time = self.board_time.unwrap_or(300_000);
 
         // Normal board time
         if ms > board_time / 30 {
@@ -61,7 +52,7 @@ impl TimeManager {
         true
     }
 
-    pub fn from_uci(uci: UciTimeControl, board: &Board) -> Self {
+    #[must_use] pub fn from_uci(uci: &UciTimeControl, board: &Board) -> Self {
         match uci {
             UciTimeControl::Infinite => Self {
                 max_depth: None,
@@ -98,7 +89,7 @@ impl TimeManager {
         }
     }
 
-    pub fn test_preset() -> Self {
+    #[must_use] pub fn test_preset() -> Self {
         Self {
             board_time: None,
             max_allowed_time_now: Some(5000),
