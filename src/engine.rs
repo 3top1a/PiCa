@@ -120,7 +120,7 @@ impl Engine {
         }
 
         if history.is_three_rep() {
-            return -OO + ply as i32;
+            return 0;
         }
 
         // Check TT
