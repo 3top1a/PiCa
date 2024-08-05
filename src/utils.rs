@@ -303,14 +303,20 @@ impl History {
 
     #[must_use]
     pub fn is_three_rep(&self) -> bool {
-        let newest: u64 = self.history[self.history.len() - 1];
-        let mut reps = 0u8;
+        let newest = self.history[self.history.len() - 1];
+        let mut reps = 0;
 
-        for i in 0..self.history.len() {
-            reps += u8::from(newest == self.history[i]);
-        }
+        reps += if newest == self.history[0] { 1 } else { 0 };
+        reps += if newest == self.history[1] { 1 } else { 0 };
+        reps += if newest == self.history[2] { 1 } else { 0 };
+        reps += if newest == self.history[3] { 1 } else { 0 };
+        reps += if newest == self.history[4] { 1 } else { 0 };
+        reps += if newest == self.history[5] { 1 } else { 0 };
+        reps += if newest == self.history[6] { 1 } else { 0 };
+        reps += if newest == self.history[7] { 1 } else { 0 };
+        reps += if newest == self.history[8] { 1 } else { 0 };
 
-        reps >= 3
+        reps >= 2
     }
 }
 

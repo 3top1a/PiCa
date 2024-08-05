@@ -15,6 +15,7 @@ clean:
 	$(CARGO) clean
 
 test:
+	cat testuci | RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) run --release
 	RUSTFLAGS="$(RUSTFLAGS)" $(CARGO) test
 
 bench:

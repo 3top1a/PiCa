@@ -59,6 +59,8 @@ fn main() {
             continue;
         }
 
+        // TODO Move uci logic into Engine struct
+
         let msg: UciMessage = parse_one(&line);
         match msg {
             UciMessage::Uci => {
@@ -101,6 +103,8 @@ fn main() {
                 fen,
                 moves,
             } => {
+                hist = History::new();
+
                 if startpos {
                     board = Board::default();
                 }
