@@ -119,8 +119,8 @@ impl Engine {
             return self.qsearch(board, alpha, beta, sinfo, ply);
         }
 
-        if history.is_three_rep() && ply != 0 {
-            return OO - ply as i32;
+        if history.is_three_rep() {
+            return -OO + ply as i32;
         }
 
         // Check TT
